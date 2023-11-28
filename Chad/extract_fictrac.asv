@@ -106,7 +106,7 @@ out.movspd = movspd * radius * fps;
 out.drotvlx = drotvlx * fps *180/3.14159;
 out.drotvly = drotvly * fps *180/3.14159;
 out.drotvlz = drotvlz * fps *180/3.14159;
-out.movdir = movdir * fps * 180/3.14159;
-out.inthead = inthead * fps *180/3.14159;
+out.movdir = movdir *180/3.14159;
+out.inthead = inthead *180/3.14159;
 
 end

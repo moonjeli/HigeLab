@@ -79,9 +79,8 @@ end
 task_mean = squeeze(nanmean(straight_mean,3));
 task_mean = [task_mean; squeeze(nanmean(turn_mean,3))];
 
-% boxplot(task_mean([1,2,5,3],:)')
-[p,t,stats] = anova1(task_mean([1,2,5,3],:)')
-[c,m,h,gnames] = multcompare(stats);
+boxplot(task_mean([1,2,5,3],:)')
+
 
 %plot trial by trial population means
 trial_mean  = squeeze(nanmean(session_data,1));
