@@ -1,0 +1,35 @@
+%Octanol_responses
+
+%% CH_11172023\Fly000 straight
+
+fictrac_dat = 'E:\Data\LiveVideo\11172023\Fly000\odor_straight\fictrac-20231117_103902.dat';
+fictrac_txt = 'E:\Data\LiveVideo\11172023\Fly000\odor_straight\fictrac-vidLogFrames-20231117_103902.txt';
+fictrac_stim_csv = 'E:\Data\LiveVideo\11172023\Fly000\odor_straight\Results.csv';
+
+data.fly_11172023_000.straight = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_stim_csv);
+
+fictrac_dat = 'E:\Data\LiveVideo\11172023\Fly000\odor_right\fictrac-20231117_105539.dat';
+fictrac_txt = 'E:\Data\LiveVideo\11172023\Fly000\odor_right\fictrac-vidLogFrames-20231117_105539.txt';
+fictrac_stim_csv = 'E:\Data\LiveVideo\11172023\Fly000\odor_right\Results.csv';
+
+data.fly_11172023_000.right = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_stim_csv);
+
+%% CH_11172023\Fly000 straight
+
+fictrac_dat = 'E:\Data\LiveVideo\11172023\Fly001\odor_straight\fictrac-20231117_103902.dat';
+fictrac_txt = 'E:\Data\LiveVideo\11172023\Fly001\odor_straight\fictrac-vidLogFrames-20231117_103902.txt';
+fictrac_stim_csv = 'E:\Data\LiveVideo\11172023\Fly001\odor_straight\Results.csv';
+
+data.fly_11172023_001.straight = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_stim_csv);
+
+fictrac_dat = 'E:\Data\LiveVideo\11172023\Fly001\odor_right\fictrac-20231117_112706.dat';
+fictrac_txt = 'E:\Data\LiveVideo\11172023\Fly001\odor_right\fictrac-vidLogFrames-20231117_112706.txt';
+fictrac_stim_csv = 'E:\Data\LiveVideo\11172023\Fly001\odor_right\Results.csv';
+
+data.fly_11172023_001.right = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_stim_csv);
+
+%%
+straight_vs_turn(data, 'movspd')
+
+straight_vs_turn(data, 'drotvlx')
+
