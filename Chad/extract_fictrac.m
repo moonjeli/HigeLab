@@ -1,5 +1,5 @@
 %% FicTracExtract.m
-function [out] = extract_fictrac(fictrac_dat, vidLog, stim_file);
+function [out] = extract_fictrac(fictrac_dat, vidLog, stim_file, thresh);
 fictrac_out = load(fictrac_dat);
 radius = 4.5;
 
@@ -63,10 +63,14 @@ out.intyposR = intyposR;
 % else
 %     stim_detrend = stim_trace;
 % end
-figure; 
-hold on
-plot(stim_trace)
-thresh = input('input threshold:  ');
+if ~exist("thresh","var")
+
+    figure; 
+    hold on
+    plot(stim_trace)
+    thresh = input('input threshold:  ');
+end
+
 
 % thresh = nanmean(stim_detrend(1:2000)) + 5 * std(stim_detrend(1:2000));
 stim_smooth = smooth(stim_trace, 15, 'sgolay', 7);
