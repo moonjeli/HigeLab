@@ -4,7 +4,7 @@ clearvars
 close all
 %daq.reset % Commented off b/c this will energizes all the valves!
 
-OriginalCD=cd('C:\Users\scanimage\Documents\MATLAB\ImageAcq\thstim\');
+OriginalCD=cd('C:\Users\higelab\Documents\GitHub\HigeLab\Chad\thstim\');
 
 %% Customizable parameters
 
@@ -18,16 +18,14 @@ NIdaq.ID='Dev2';
 %               Names will be used as the field names of data
 %
 % ao channels must be defined & added in each menu file
-
-aichannels={'ai0','Pockels'...
-    ;'ai1','PID'...
-    ;'ai2','LED_command'...
-    ;'ai3','Shutter_command'...
-    };
+% 
+% aichannels={'ai0','Pockels'...
+%     ;'ai1','PID'...
+%     ;'ai2','LED_command'...
+%     ;'ai3','Shutter_command'...
+%     };
 % Set ao channel used for stimulus output
-Sout={'ao0',...LED command
-    'ao1'...PMT shutter command
-    };
+Sout={'ao0'};
 
 % Set reference files
 parameterfile='parameters.xls'; %First 10 worksheets will be loaded into menu
@@ -40,7 +38,7 @@ odorfile='odors.xls'; %List of odors with valve #
 % Check nidaq board
 HWlist=daq.getDevices;
 for i=1:length(HWlist)
-    if strcmpi(HWlist(i).ID,NIdaq.ID)
+    if strcmpi(HWlist(i).Model,'USB-6001')
         NIdaq.dev=HWlist(i).ID;
         break
     end
@@ -51,7 +49,7 @@ end
 
 % Make default session
 % (May not use this session but may shorten the time to make next one)
-SS=MakeDefaultAISession(NIdaq.dev,aichannels);
+% SS=MakeDefaultAISession(NIdaq.dev,aichannels);
 
 % % Make analog output session to have immediate control of output
 % aoSS=daq.createSession('ni');
@@ -60,11 +58,11 @@ SS=MakeDefaultAISession(NIdaq.dev,aichannels);
 
 % olfactometer 
 
-AC=connectAlicat;%Connect to alicat controler
+% AC=connectAlicat;%Connect to alicat controler
 % Update COM port in connectAlicat.m if you change the port.
-shutAllValves_SS%Connect to USB6509
+% shutAllValves_SS%Connect to USB6509
 % Look up connectUSB6509_SS.m for the assignment of the dio channels
-FillTime=5;%Time(sec) needed to odorize the tube.
+FillTime=2;%Time(sec) needed to odorize the tube.
 
 %% Defining variables
 menuscript='';
@@ -199,9 +197,9 @@ nextodorh=uicontrol('Parent',odorpanelh,'style','text','String','',...
 warning('off')
 [valve_dilution, odorlist]=xlsread(odorfile,1);
 warning('on')
-%odorlist=odorlist(:,2)';
-odorlist=odorlist';
-sortedodorlist=[sort(odorlist),'DELETE THIS LINE!!'];
+odorlist=odorlist(:,1)';
+% odorlist=odorlist';
+% sortedodorlist=[sort(odorlist),'DELETE THIS LINE!!'];
 defOdorTableData=[num2cell(valve_dilution(:,1)),odorlist',num2cell(false(length(odorlist),1)),...
     num2cell(valve_dilution(:,3:4))];
 for i=1:size(defOdorTableData,1)
@@ -236,7 +234,7 @@ for i=1:min(length(menulist),10)
                 '''ColumnWidth'',{35 110 35 50 50 60},'...
                 '''ColumnName'', {''Valve'' ''Odor Name'' ''Stim'' ''1st d'' ''2nd d'' ''Total d''},'...
                 '''data'',defOdorTableData,'...
-                '''ColumnFormat'', {''numeric'',sortedodorlist,''logical'',''numeric'',''numeric'',''numeric''},'...
+                '''ColumnFormat'', {''numeric'',odorlist,''logical'',''numeric'',''numeric'',''numeric''},'...
                 '''FontUnits'',''Normalized'',''FontSize'',.065,'...
                 '''tag'',''odortable'','...
                 '''visible'',''off'',''CellEditCallback'',''odorchange'','...

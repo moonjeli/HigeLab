@@ -1,3 +1,4 @@
+
 %% Generating LED/Shutter stim input
 % if parameter.ao_sr~=parameter.ai_sr
 %     warndlg('Analog input-output sampling rate must be the same!')
@@ -54,27 +55,25 @@ end
  
  nonstim=nonstim';%%Used with odor NOT paired with stim
 
- %% connect to fictrac 
- PORT = 7070;
-u = udpport("byte", "IPV4", "LocalHost","127.0.0.1","LocalPort", PORT, "EnablePortSharing",true);
-
-
 %% Generating odor stim
-% if get(randomodorh,'value') &&  size(odortable,1)>2 %Randomize odor
-%     
-%     rep=[];
-%     for i=1:parameter.numt;
-%         rep=[rep,randperm(size(odortable,1))];
-%         if i>1 && rep(end-size(odortable,1))==rep(end-size(odortable,1)+1)%To prevent present same odor successively
-%             rep(end-size(odortable,1)+1:end-size(odortable,1)+2)=[rep(end-size(odortable,1)+2),rep(end-size(odortable,1)+1)];
-%         end
-%     end
-% else    %Not randomize odor
-%     rep=repmat(1:size(odortable,1),1,parameter.numt);
-% end
-% odorstim=odortable(rep',:);
+if get(randomodorh,'value') &&  size(odortable,1)>2 %Randomize odor
+    
+    rep=[];
+    for i=1:parameter.numt;
+        rep=[rep,randperm(size(odortable,1))];
+        if i>1 && rep(end-size(odortable,1))==rep(end-size(odortable,1)+1)%To prevent present same odor successively
+            rep(end-size(odortable,1)+1:end-size(odortable,1)+2)=[rep(end-size(odortable,1)+2),rep(end-size(odortable,1)+1)];
+        end
+    end
+else    %Not randomize odor
+    rep=repmat(1:size(odortable,1),1,parameter.numt);
+end
+odorstim=odortable(rep',:);
 %%'i'th row corresponds to 'i'th sweep
 
+%% Connect to fictrac
+ PORT = 7070;
+u = udpport("byte", "IPV4", "LocalHost","127.0.0.1","LocalPort", PORT, "EnablePortSharing",true);
 
 %% Recording loop
 for i=1:parameter.numt;  
@@ -148,10 +147,33 @@ for i=1:parameter.numt;
         end
     end
     toc
+
+    pause(parameter.preO - tok);
+    
+    outputSingleScan(s,0);
+    
+    toc
+    if (u.NumBytesAvailable > 0)
+        data = read(u, u.NumBytesAvailable, "string");
+        TextAsCells = regexp(data, '/n', 'split');
+        line = TextAsCells{end};
+        toks = strsplit(line, ',');
+% 
+        if ((length(toks) < 24) | (toks(1) ~= "FT"))
+            print("Bad read")
+        else
+            cnt = str2num(toks{2})
+        end
+    end
+    toc
+
     pause(FillTime) %fill time set in thstim
 %     StartScanImage_SS
+
+    pause(parameter.odorD + parameter.preO - toc)
+    outputSingleScan(s,1);
     
-    wait(SS,parameter.dur)
+%     wait(SS,parameter.dur+5)
 %     StopScanImage_SS
     %% Retrieve, save, visualize the data
 %     set(statush, 'String','Saving',...

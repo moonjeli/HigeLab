@@ -1,21 +1,21 @@
 
 %% Generating LED/Shutter stim input
-if parameter.ao_sr~=parameter.ai_sr
-    warndlg('Analog input-output sampling rate must be the same!')
-    return
-end
-
-
-if isfield(parameter,'SL_Delay_pre')
-    Shutter_LED_Delay(1)=parameter.SL_Delay_pre;
-else
-    Shutter_LED_Delay(1)=15;
-end
-if isfield(parameter,'SL_Delay_post')
-    Shutter_LED_Delay(2)=parameter.SL_Delay_post;
-else
-    Shutter_LED_Delay(2)=15;
-end
+% if parameter.ao_sr~=parameter.ai_sr
+%     warndlg('Analog input-output sampling rate must be the same!')
+%     return
+% end
+% 
+% 
+% if isfield(parameter,'SL_Delay_pre')
+%     Shutter_LED_Delay(1)=parameter.SL_Delay_pre;
+% else
+%     Shutter_LED_Delay(1)=15;
+% end
+% if isfield(parameter,'SL_Delay_post')
+%     Shutter_LED_Delay(2)=parameter.SL_Delay_post;
+% else
+%     Shutter_LED_Delay(2)=15;
+% end
 % Shutter_LED_Delay is
 % [delay from shutter onset to LED onset, Delay from LED offset to shutter
 % offset] in ms
@@ -36,21 +36,21 @@ else
   putfive_shutter=[];
   for i=1:parameter.stimN;
       putfive(parameter.ao_sr*parameter.stimD/1000*(i-1)+1:parameter.ao_sr*parameter.stimD/1000*i)=...
-            ((parameter.preS+parameter.isi*(i-1))*parameter.ao_sr):...
-            ((parameter.preS+parameter.isi*(i-1))*parameter.ao_sr+parameter.ao_sr*parameter.stimD/1000-1);
-      
-     putfive_shutter(parameter.ao_sr*(parameter.stimD+sum(Shutter_LED_Delay))/1000*(i-1)+1:...
-         parameter.ao_sr*(parameter.stimD+sum(Shutter_LED_Delay))/1000*i)=...
-            ((parameter.preS+parameter.isi*(i-1)-Shutter_LED_Delay(1)/1000)*parameter.ao_sr):...
-            ((parameter.preS+parameter.isi*(i-1))*parameter.ao_sr+parameter.ao_sr*(parameter.stimD+Shutter_LED_Delay(2))/1000-1);
+            ((parameter.preS+parameter.isi*(i-1))*parameter.ao_sr)+1:...
+            ((parameter.preS+parameter.isi*(i-1))*parameter.ao_sr+parameter.ao_sr*parameter.stimD/1000-1)+1;
+%       
+%      putfive_shutter(parameter.ao_sr*(parameter.stimD+sum(Shutter_LED_Delay))/1000*(i-1)+1:...
+%          parameter.ao_sr*(parameter.stimD+sum(Shutter_LED_Delay))/1000*i)=...
+%             ((parameter.preS+parameter.isi*(i-1)-Shutter_LED_Delay(1)/1000)*parameter.ao_sr):...
+%             ((parameter.preS+parameter.isi*(i-1))*parameter.ao_sr+parameter.ao_sr*(parameter.stimD+Shutter_LED_Delay(2))/1000-1);
   end
  stim(round(putfive))=min([5*parameter.stimI/1000,5]);
  %Assuming max current of LED controler is set to 1000mA, which is max
  %current of the current LED.
- shutter_com(round(putfive_shutter))=5;
+%  shutter_com(round(putfive_shutter))=5;
  
  stim=stim';%%Used with odor paired with stim
- shutter_com=shutter_com';
+%  shutter_com=shutter_com';
 end
  
  nonstim=nonstim';%%Used with odor NOT paired with stim
@@ -71,32 +71,42 @@ end
 odorstim=odortable(rep',:);
 %%'i'th row corresponds to 'i'th sweep
 
+%% Connect to fictrac
+ PORT = 7070;
+u = udpport("byte", "IPV4", "LocalHost","127.0.0.1","LocalPort", PORT, "EnablePortSharing",true);
 
 %% Recording loop
-for i=1:size(odorstim,1);  
+for i=1:parameter.numt;  
     %% Setup odor stim
-    thisValve=odorstim{i,1};
-    thisOdor=odorstim{i,2};
-    thisStim=odorstim{i,3};
-    thisFirstD=odorstim{i,4};
-    thisSecondD=odorstim{i,5};
-    thisTotalD=odorstim{i,6};
+%     thisValve=odorstim{i,1};
+    thisOdor='ACV';
+    thisStim = 1;
+%     thisFirstD=odorstim{i,4};
+%     thisSecondD=odorstim{i,5};
+%     thisTotalD=odorstim{i,6};
     set(nextodorh,'string',thisOdor)
     set(nextodorh,'ForegroundColor','r')
     
     %% Hardware setup
-    SS=MakeDefaultAISession(NIdaq.dev,aichannels);
-    ThisChName={SS.Channels.Name}';% Must be called before adding ao channels
+    s=daq.createSession('ni');
+    warning off
+    ThisChName = {s.Channels.Name}';% Must be called before adding ao channels
+    addDigitalChannel(s,NIdaq.dev, 'port0/line0', 'OutputOnly'); %add odor valve port
+%     SS=MakeDefaultAISession(NIdaq.dev,aichannels);
+    SS=daq.createSession('ni');
+
+%     ThisChName={SS.Channels.Name}';% Must be called before adding ao channels
     SS.addAnalogOutputChannel(NIdaq.dev,Sout,'voltage');
+    outputSingleScan(s,1);
+
     % Sout is set in thstim.m.
     % Current setting is:
     %   ao0: LED command
-    %   ao1: PMT shutter command
     SS.Rate=parameter.ai_sr;
     if thisStim
-        queueOutputData(SS,[stim,shutter_com]);
+        queueOutputData(SS,[stim]);
     else
-        queueOutputData(SS,[nonstim,nonstim]);
+        queueOutputData(SS,[nonstim]);
     end
     fid=fopen('DataLog.bin','w+');%temporary file to log data
     SS.NotifyWhenDataAvailableExceeds=parameter.dur*parameter.ai_sr;
@@ -104,130 +114,197 @@ for i=1:size(odorstim,1);
         @(~,event) fwrite(fid,[event.TimeStamps,event.Data],'single'));
 
     %% Change the status indicator
-   set(statush, 'String','Running',...
+    set(statush, 'String','Running',...
         'back','r','Fontsize',0.225)
-    set(roundh,'string',{' ',sprintf('Round : %d/%d',ceil(i/size(odortable,1)),parameter.numt),...
-        sprintf('Sweep : %d/%d',i-(ceil(i/size(odortable,1))-1)*size(odortable,1),size(odortable,1))})
-    
+    set(roundh,'string',{' ',sprintf('Sweep : %d/%d',i,parameter.numt)})
     %% Wait until the right timing 
-    if i>2 && FillTime>=parameter.preO
-        pause(FillTime-parameter.preO-toc(injectic))
-    elseif i>2 && FillTime<parameter.preO
-        initialiseFlows_SS(AC,thisFirstD,thisSecondD);
-        pause(parameter.iti-toc)
-    elseif i==1 && FillTime>=parameter.preO
-        initialiseFlows_SS(AC,thisFirstD,thisSecondD);
-        injectOdour_SS(thisValve)
-        pause(FillTime-parameter.preO)
-    else
-        initialiseFlows_SS(AC,thisFirstD,thisSecondD);
-    end
+%     if i>2 && FillTime>=parameter.preO
+%         pause(FillTime-parameter.preO-toc(injectic))
+%     elseif i>2 && FillTime<parameter.preO
+%         initialiseFlows_SS(AC,thisFirstD,thisSecondD);
+%         pause(parameter.iti-toc)
+%     elseif i==1 && FillTime>=parameter.preO
+%         initialiseFlows_SS(AC,thisFirstD,thisSecondD);
+%             outputSingleScan(s,[0,1]); %turn on LED 
+%         pause(FillTime-parameter.preO)
+%     else
+%         initialiseFlows_SS(AC,thisFirstD,thisSecondD);
+%     end
     %% Start acquisition & valve flipping
+    tic
     datatime=now;
     startBackground(SS);
-    StartScanImage_SS
-    
-    tic
-    
-    if FillTime<parameter.preO
-        pause(parameter.preO-FillTime)
-        injectOdour_SS(thisValve)
+
+    toc
+    if (u.NumBytesAvailable > 0)
+        data = read(u, u.NumBytesAvailable, "string");
+        TextAsCells = regexp(data, '/n', 'split');
+        line = TextAsCells{end};
+        toks = strsplit(line, ',');
+% 
+        if ((length(toks) < 24) | (toks(1) ~= "FT"))
+            print("Bad read")
+        else
+            cnt = str2num(toks{2})
+        end
     end
-    pause(parameter.preO-toc)
-    FlipValve_SS('final',0)
-    pause(parameter.preO+parameter.odorD-toc)
-    shutAllValves_SS
-    wait(SS,parameter.dur+5)
-    StopScanImage_SS
-    %% Retrieve, save, visualize the data
-    set(statush, 'String','Saving',...
-        'back','b','Fontsize',0.3)
-    pause(0.001)
-    frewind(fid);
-    data=single(fread(fid,[SS.ScansAcquired,inf],'single'));
-    fclose(fid);
+    toc
+
+    pause(parameter.preO - toc);
     
-    savedata
-    indexnum=indexnum+1;
+    outputSingleScan(s,0);
+    
+    toc
+    if (u.NumBytesAvailable > 0)
+        data = read(u, u.NumBytesAvailable, "string");
+        TextAsCells = regexp(data, '/n', 'split');
+        line = TextAsCells{end};
+        toks = strsplit(line, ',');
+% 
+        if ((length(toks) < 24) | (toks(1) ~= "FT"))
+            print("Bad read")
+        else
+            cnt = str2num(toks{2})
+        end
+    end
+    toc
+
+    pause(FillTime) %fill time set in thstim
+%     StartScanImage_SS
+
+    pause(parameter.odorD + parameter.preO - toc)
+    outputSingleScan(s,1);
+    
+        toc
+    if (u.NumBytesAvailable > 0)
+        data = read(u, u.NumBytesAvailable, "string");
+        TextAsCells = regexp(data, '/n', 'split');
+        line = TextAsCells{end};
+        toks = strsplit(line, ',');
+% 
+        if ((length(toks) < 24) | (toks(1) ~= "FT"))
+            print("Bad read")
+        else
+            cnt = str2num(toks{2})
+        end
+    end
+    toc
+    
+%     wait(SS,parameter.dur+5)
+%     StopScanImage_SS
+    %% Retrieve, save, visualize the data
+%     set(statush, 'String','Saving',...
+%         'back','b','Fontsize',0.3)
+%     pause(0.001)
+%     frewind(fid);
+% %     data=single(fread(fid,[SS.ScansAcquired,inf],'single'));
+%     fclose(fid);
+%     
+%     savedata
+%     indexnum=indexnum+1;
     %% Wait until next trial, allowing Stop or Pause
+%    set(statush, 'String',{'Waiting for' 'trigger'},...
+%         'back','y','Fontsize',0.175)
+%     if i<size(odorstim,1)
+%         set(nextodorh,'string',sprintf('NEXT::%s',odorstim{i+1,2}))
+%         set(roundh,'string',{'Next',sprintf('Round : %d/%d',ceil((i+1)/size(odortable,1)),parameter.numt),...
+%             sprintf('Sweep : %d/%d',i+1-(ceil((i+1)/size(odortable,1))-1)*size(odortable,1),size(odortable,1))})
+%     else
+%         break
+%     end
+%     
+%     set(nextodorh,'ForegroundColor','k')
+%     if FillTime>=parameter.preO
+%         while toc<parameter.iti-FillTime+parameter.preO
+%             pause(0.01)
+%             if stopkey
+%                 break
+%             end 
+%             if get(pauseh,'value')==1
+%                 set(statush, 'String','Pause',...
+%                     'back','m','Fontsize',0.3)
+%                 while get(pauseh,'value')==1
+%                     pause(0.01)
+%                 end
+%                 set(statush, 'String',{'Waiting for' 'trigger'},...
+%                     'back','y','Fontsize',0.175)
+%             end
+%         end
+%         if stopkey
+%             break
+%         end
+%         initialiseFlows_SS(AC,odorstim{i+1,4},odorstim{i+1,5});
+%         injectOdour_SS(odorstim{i+1,1})
+%         injectic=tic;
+%         while toc(injectic)<(FillTime-parameter.preO-.5)
+%             pause(0.01)
+%             if stopkey
+%                 break
+%             end
+%             
+%             if get(pauseh,'value')==1
+%                 set(statush, 'String','Pause',...
+%                     'back','m','Fontsize',0.3)
+%                 while get(pauseh,'value')==1
+%                     pause(0.01)
+%                 end
+%                 set(statush, 'String',{'Waiting for' 'trigger'},...
+%                     'back','y','Fontsize',0.175)
+%             end
+%         end
+%         if stopkey
+%             break
+%         end
+%     else
+%         while toc<parameter.iti-.5
+%             pause(0.01)
+%             if stopkey
+%                 break
+%             end
+%             
+%             if get(pauseh,'value')==1
+%                 set(statush, 'String','Pause',...
+%                     'back','m','Fontsize',0.3)
+%                 while get(pauseh,'value')==1
+%                     pause(0.01)
+%                 end
+%                 set(statush, 'String',{'Waiting for' 'trigger'},...
+%                     'back','y','Fontsize',0.175)
+%             end
+%         end
+%         if stopkey
+%             break
+%         end
+%     end
+%     
    set(statush, 'String',{'Waiting for' 'trigger'},...
-        'back','y','Fontsize',0.175)
-    if i<size(odorstim,1)
-        set(nextodorh,'string',sprintf('NEXT::%s',odorstim{i+1,2}))
-        set(roundh,'string',{'Next',sprintf('Round : %d/%d',ceil((i+1)/size(odortable,1)),parameter.numt),...
-            sprintf('Sweep : %d/%d',i+1-(ceil((i+1)/size(odortable,1))-1)*size(odortable,1),size(odortable,1))})
-    else
+    'back','y','Fontsize',0.175)
+    set(roundh,'string',{'Next',sprintf('Sweep : %d/%d',i+1,parameter.numt)})
+    
+    while toc<parameter.iti-0.4
+        pause(0.01)
+        if stopkey
+            break
+        end
+        
+        if get(pauseh,'value')==1
+            set(statush, 'String','Pause',...
+                'back','m','Fontsize',0.3)
+            while get(pauseh,'value')==1
+                pause(0.01)
+            end
+            set(statush, 'String',{'Waiting for' 'trigger'},...
+                'back','y','Fontsize',0.175)
+        end
+    end
+    
+    if stopkey
         break
     end
     
-    set(nextodorh,'ForegroundColor','k')
-    if FillTime>=parameter.preO
-        while toc<parameter.iti-FillTime+parameter.preO
-            pause(0.01)
-            if stopkey
-                break
-            end 
-            if get(pauseh,'value')==1
-                set(statush, 'String','Pause',...
-                    'back','m','Fontsize',0.3)
-                while get(pauseh,'value')==1
-                    pause(0.01)
-                end
-                set(statush, 'String',{'Waiting for' 'trigger'},...
-                    'back','y','Fontsize',0.175)
-            end
-        end
-        if stopkey
-            break
-        end
-        initialiseFlows_SS(AC,odorstim{i+1,4},odorstim{i+1,5});
-        injectOdour_SS(odorstim{i+1,1})
-        injectic=tic;
-        while toc(injectic)<(FillTime-parameter.preO-.5)
-            pause(0.01)
-            if stopkey
-                break
-            end
-            
-            if get(pauseh,'value')==1
-                set(statush, 'String','Pause',...
-                    'back','m','Fontsize',0.3)
-                while get(pauseh,'value')==1
-                    pause(0.01)
-                end
-                set(statush, 'String',{'Waiting for' 'trigger'},...
-                    'back','y','Fontsize',0.175)
-            end
-        end
-        if stopkey
-            break
-        end
-    else
-        while toc<parameter.iti-.5
-            pause(0.01)
-            if stopkey
-                break
-            end
-            
-            if get(pauseh,'value')==1
-                set(statush, 'String','Pause',...
-                    'back','m','Fontsize',0.3)
-                while get(pauseh,'value')==1
-                    pause(0.01)
-                end
-                set(statush, 'String',{'Waiting for' 'trigger'},...
-                    'back','y','Fontsize',0.175)
-            end
-        end
-        if stopkey
-            break
-        end
-    end
-    
-    
     
 end
-shutAllValves_SS
+% shutAllValves_SS
 %QuickAOPutSample(NIdaq.dev,{'ao0','ao1'},0)
 set(nextodorh,'string','')
 set(roundh,'string','')
