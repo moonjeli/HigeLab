@@ -1,0 +1,22 @@
+function varargout=MFC_info(AC,MFC)
+% function OUT=MFC-info(AC,MFC)
+%
+% Report settings and parameters for a given MFC. 
+%
+% Rob Campbell - August 28th 2012 - CSHL
+
+
+%P-gain register 21
+fprintf(AC,sprintf('%s$$R21',MFC));
+OUT.P=reg2num(fscanf(AC));
+
+%D-gain register 22
+
+
+%I-gain register 23
+
+
+
+function n=reg2num(in)
+n=regexp(in,' = (.*)','tokens');
+n=str2num(n{1}{1});

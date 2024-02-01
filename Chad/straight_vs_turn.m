@@ -98,9 +98,9 @@ for fly = 1: length(flies)
     straight_mean(2,fly,:) = nanmean(squeeze(session_data(fly,:,trial_length+1:trial_length *2)),2);
     straight_mean(3,fly,:) = nanmean(squeeze(session_data(fly,:,trial_length * 2+1:trial_length*3)),2);
 
-    turn_mean(1,fly,:) = nanmean(squeeze(session_turn_data(fly,:,1:trial_length)),2);
-    turn_mean(2,fly,:) = nanmean(squeeze(session_turn_data(fly,:,trial_length+1:trial_length *2)),2);
-    turn_mean(3,fly,:) = nanmean(squeeze(session_turn_data(fly,:,trial_length * 2+1:trial_length*2.5)),2);
+    turn_mean(1,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,1:trial_length)),2);
+    turn_mean(2,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,trial_length+1:trial_length *2)),2);
+    turn_mean(3,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,trial_length * 2+1:trial_length*2.5)),2);
 end
 
 
@@ -116,6 +116,15 @@ if measure == "movspd"
 else 
     ylabel("average rotation degrees/s")
 end
+box off
+yt = get(gca, 'YTick');
+axis([xlim    0  ceil(max(yt)*1.2)])
+xt = get(gca, 'XTick');
+hold on
+% plot(xt([1 2]), [1 1]*max(yt)*1.05, '-k',  mean(xt([1 2])), max(yt)*1.10, '*k')
+plot(xt([1 3]), [1 1]*max(yt)*1.1, '-k',  mean(xt([1 3])), max(yt)*1.15, '*k')
+
+hold off
 
 figure; hold on
 
@@ -156,20 +165,30 @@ turn_pop_mean = nanmean(turn_data_mean);
 turn_pop_sem = nanstd(turn_data_mean)./sqrt(size(turn_data_mean,1));
 
 %plot population data
+color_seq = ["b" "r" "g" "c" "m" "y" "k"];
+
 figure; hold on
 x = x_axis(1:length(pop_mean));
-plot(x, pop_mean + pop_sem, 'Color', [.7 .7 .7]);
-plot(x, pop_mean - pop_sem, 'Color', [.7 .7 .7]);
-plot(x, pop_mean, 'k')
-
+h = plot(x,pop_mean(:),color_seq(1), 'LineWidth',2, 'DisplayName',"ACV straight")
+j = patch([x fliplr(x)], [(pop_mean(:)'+pop_sem(:)') fliplr(pop_mean(:)'-pop_sem(:)')],color_seq(1))
+alpha(0.3)
+% plot(x, pop_mean + pop_sem, 'Color', [.7 .7 .7]);
+% plot(x, pop_mean - pop_sem, 'Color', [.7 .7 .7]);
+% plot(x, pop_mean, 'k', "DisplayName", "straight odor")
 x = x_axis(1:length(turn_pop_mean));
-plot(x, turn_pop_mean + turn_pop_sem, 'Color', [0 .7 .7]);
-plot(x, turn_pop_mean - turn_pop_sem, 'Color', [0 .7 .7]);
-plot(x, turn_pop_mean, 'b')
-line([x(trial_length), x(trial_length)], [min(smooth_data),max(smooth_data)]);
-line([x(trial_length)*2, x(trial_length)*2], [min(smooth_data),max(smooth_data)]);
-
-if measure == "movspd"
+h = plot(x,turn_pop_mean(:),color_seq(2), 'LineWidth',2, 'DisplayName',"ACV straight")
+j = patch([x fliplr(x)], [(turn_pop_mean(:)'+turn_pop_sem(:)') fliplr(turn_pop_mean(:)'-turn_pop_sem(:)')],color_seq(2))
+alpha(0.3)
+% x = x_axis(1:length(turn_pop_mean));
+% plot(x, turn_pop_mean + turn_pop_sem, 'Color', [0 .7 .7]);
+% plot(x, turn_pop_mean - turn_pop_sem, 'Color', [0 .7 .7]);
+% plot(x, turn_pop_mean, 'b', "DisplayName", "side odor")
+line([13, 13], [min(smooth_data),max(smooth_data)],'Color', 'k');
+line([13*2, 13*2], [min(smooth_data),max(smooth_data)], 'Color','k');
+legend("straight odor +- sem",'', "side odor +- sem",'','')
+xlim([0 35])
+ylim([0 100])
+if measure == "movspd"  
     ylabel("average speed mm/s")
 else 
     ylabel("average rotation degrees/s")

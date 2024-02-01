@@ -175,7 +175,7 @@ plot(nanmean(session_zangle))
 line([trial_length, trial_length], [min(smooth_zangle),max(smooth_zangle)]);
 line([trial_length*2, trial_length*2], [min(smooth_zangle),max(smooth_zangle)]);
 
-smooth_movdir = smooth(movdir * 180/3.14159, 21, 'sgolay', 7);
+smooth_movdir = smooth(inthead * 180/3.14159, 21, 'sgolay', 7);
 movdir_diff = diff(smooth_movdir);
 figure; hold on
 smooth_movdir_diff = movmean(movdir_diff,10);

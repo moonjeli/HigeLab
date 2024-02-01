@@ -109,17 +109,15 @@ data.fly_11092023_001.right = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_
 fictrac_dat = '11092023/Fly003/odor_straight/fictrac-20231109_134658.dat';
 fictrac_txt = '11092023/Fly003/odor_straight/fictrac-vidLogFrames-20231109_134658.txt';
 fictrac_stim_csv = '11092023/Fly003/odor_straight/Results.csv';
-thresh = 200;
 
-data.fly_11092023_003.straight = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_stim_csv, thresh);
+data.fly_11092023_003.straight = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_stim_csv);
 
 
 fictrac_dat = '11092023/Fly003/odor_left/fictrac-20231109_140115.dat';
 fictrac_txt = '11092023/Fly003/odor_left/fictrac-vidLogFrames-20231109_140115.txt';
 fictrac_stim_csv = '11092023/Fly003/odor_left/Results.csv';
-thresh = 200;
 
-data.fly_11092023_003.left = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_stim_csv, thresh);
+data.fly_11092023_003.left = extract_fictrac(fictrac_dat, fictrac_txt, fictrac_stim_csv);
 
 
 %% 12062023/Fly004
