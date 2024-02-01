@@ -12,7 +12,7 @@
 % %     Change "Output Type" to "Column vectors"
 % %     Then select "Import Data"
 % % 
-% % Assumes video is acquired at 60 fps
+% % Assumes video is acquired at 100 fps
 % % Last updated by Drew, 14 Feb 2022
 
 %% FicTracExtract.m
@@ -186,6 +186,18 @@ end
 plot(nanmean(session_movdir_diff))
 line([trial_length, trial_length], [min(smooth_movdir_diff),max(smooth_movdir_diff)]);
 line([trial_length*2, trial_length*2], [min(smooth_movdir_diff),max(smooth_movdir_diff)]);
+
+smooth_head = smooth(inthead * 180/3.14159, 21, 'sgolay', 7);
+head_diff = diff(smooth_head);
+figure; hold on
+smooth_head_diff = movmean(head_diff,10);
+for stim = 1:length(stim_starts);
+    smooth_head_diff(stim,1:length(trial_frames{stim})) = smooth_head_diff(trial_frames{stim});
+    plot(smooth_head_diff(trial_frames{stim}), 'Color', [.7 .7 .7])
+end
+plot(nanmean(smooth_head_diff))
+line([trial_length, trial_length], [min(smooth_head_diff),max(smooth_head_diff)]);
+line([trial_length*2, trial_length*2], [min(smooth_head_diff),max(smooth_head_diff)]);
 % figure; hold on
 % plot(smooth_spd)
 % plot(stim_frames, smooth_spd(stim_frames))
