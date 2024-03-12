@@ -62,7 +62,7 @@ end
 % Update COM port in connectAlicat.m if you change the port.
 % shutAllValves_SS%Connect to USB6509
 % Look up connectUSB6509_SS.m for the assignment of the dio channels
-FillTime=2;%Time(sec) needed to odorize the tube.
+FillTime=2;%Time(sec) needed to odorize the tube. %OCT = 4.5s
 
 %% Defining variables
 menuscript='';

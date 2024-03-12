@@ -16,6 +16,9 @@
 % % Last updated by Drew, 14 Feb 2022
 
 %% FicTracExtract.m
+close all
+clear all
+
 file = uigetfile('*.dat');
 fictrac_out = load(file);
 radius = 4.5;
@@ -107,15 +110,19 @@ for err = 1: sum(errors)
     intyposR(find(BW == err,1)+1:end) = intyposR(find(BW == err,1)+1:end) - y_diff(find(BW == err,1));
 end
 
-%Designate stimulus frames
-% if nanmean(stim_trace(1:2000) + 5 * std(stim_trace(1:2000))) < nanmean(stim_trace(end-2000:end))
-%     stim_detrend = detrend(stim_trace);
-% else
-%     stim_detrend = stim_trace;
-% end
+ % find the difference between each points moving direction to determine the turning of the animal
+movdir = movdir * fps * 180/3.14159;
 
+x = diff(movdir);
+x = [0; x];
+x(x>5000) = x(x>5000) - 36000;
+x(x<-5000) = x(x<-5000) + 36000;
 
+movdir = movmean(x, 10);
 
+if ~exist("odor_id", "var")
+    odor_id = "odor1";
+end
 
 stim_frames = [];
 
@@ -123,7 +130,7 @@ for stim = 1:length(stim_starts)
     trial_start{stim} = frame(find(frame > frame_starts(stim),1));
     trial_end{stim} = frame(find(frame < frame_ends(stim),1,'last'));
     trial_length = trial_end{stim}-trial_start{stim};
-    trial_frames{stim} = trial_start{stim}-trial_length:trial_end{stim}+trial_length;
+    trial_frames.(odor_id{stim}){stim} = trial_start{stim}-trial_length:trial_end{stim}+trial_length;
     
     trial_xpos = intxposR(trial_start{stim}:trial_end{stim}) - intxposR(trial_start{stim});
     trial_ypos = intyposR(trial_start{stim}:trial_end{stim}) - intyposR(trial_start{stim});
@@ -134,6 +141,7 @@ for stim = 1:length(stim_starts)
 
 
     figure;hold on
+    title(odor_id{stim})
     plot(trial_xpos, trial_ypos)
     plot(trial_xpos(1),trial_ypos(1),'g.','markersize',20);
     plot(pre_xpos, pre_ypos);
@@ -145,97 +153,40 @@ end
 %plot moving speed
 smooth_spd = fps * radius*movmean(movspd, 10);
 figure;hold on
-max_length = max(cell2mat(cellfun(@size,trial_frames,'uni',false)));
-session_spd = NaN(length(stim_starts), max_length);
 
-for stim = 1:length(stim_starts);
-    session_spd(stim,1:length(trial_frames{stim})) = smooth_spd(trial_frames{stim});
-    plot(smooth_spd(trial_frames{stim}), 'Color', [.7 .7 .7])
+
+odors = fieldnames(trial_frames)
+for o = 1: length(odors)
+    max_length = max(cell2mat(cellfun(@size,trial_frames.(odors{o}),'uni',false)));
+    session_spd = NaN(length(stim_starts), max_length);
+    for stim = 1:length(trial_frames.(odors{o}));
+        session_spd(stim,1:length(trial_frames.(odors{o}){stim})) = smooth_spd(trial_frames.(odors{o}){stim});
+        % plot(smooth_spd(trial_frames.(odors{o}){stim}), 'Color', [.7 .7 .7])
+    end
+    plot(nanmean(session_spd), 'DisplayName', odors{o})
+    sem = nanstd(session_spd)./sqrt(size(session_spd,1));
+    % plot(nanmean(session_spd)+sem)
+    % plot(nanmean(session_spd)-sem)
+    line([trial_length, trial_length], [min(smooth_spd),max(smooth_spd)]);
+    line([2*trial_length, 2*trial_length], [min(smooth_spd),max(smooth_spd)]);
+    
 end
-plot(nanmean(session_spd))
-sem = nanstd(session_spd)./sqrt(size(session_spd,1));
-plot(nanmean(session_spd)+sem,'r')
-plot(nanmean(session_spd)-sem, 'r')
-line([trial_length, trial_length], [min(smooth_spd),max(smooth_spd)]);
-line([2*trial_length, 2*trial_length], [min(smooth_spd),max(smooth_spd)]);
 
-
+%plot turning
 figure; hold on
-smooth_xangle = movmean(drotvlx,10);
-for stim = 1:length(stim_starts);
-    session_xangle(stim,1:length(trial_frames{stim})) = smooth_xangle(trial_frames{stim});
-    plot(smooth_xangle(trial_frames{stim}), 'Color', [.7 .7 .7])
-end
-plot(nanmean(session_xangle))
-line([trial_length, trial_length], [min(smooth_xangle),max(smooth_xangle)]);
-line([trial_length*2, trial_length*2], [min(smooth_xangle),max(smooth_xangle)]);
 
-figure; hold on
-smooth_yangle = movmean(drotvly,10);
-for stim = 1:length(stim_starts);
-    session_yangle(stim,1:length(trial_frames{stim})) = smooth_yangle(trial_frames{stim});
-    plot(smooth_yangle(trial_frames{stim}), 'Color', [.7 .7 .7])
+for o = 1: length(odors)
+    max_length = max(cell2mat(cellfun(@size,trial_frames.(odors{o}),'uni',false)));
+    session_turn = NaN(length(stim_starts), max_length);
+    for stim = 1:length(trial_frames.(odors{o}));
+        session_turn(stim,1:length(trial_frames.(odors{o}){stim})) = movdir(trial_frames.(odors{o}){stim});
+        % plot(movdir(trial_frames.(odors{o}){stim}), 'Color', [.7 .7 .7])
+    end
+    plot(nanmean(session_turn), 'DisplayName', odors{o})
+    sem = nanstd(session_turn)./sqrt(size(session_turn,1));
+    % plot(nanmean(session_turn)+sem,'r')
+    % plot(nanmean(session_turn)-sem, 'r')
+    line([trial_length, trial_length], [min(movdir),max(movdir)]);
+    line([2*trial_length, 2*trial_length], [min(movdir),max(movdir)]);
 end
-plot(nanmean(session_yangle))
-line([trial_length, trial_length], [min(smooth_yangle),max(smooth_yangle)]);
-line([trial_length*2, trial_length*2], [min(smooth_yangle),max(smooth_yangle)]);
 
-figure; hold on
-smooth_zangle = movmean(drotvlz,10);
-for stim = 1:length(stim_starts);
-    session_zangle(stim,1:length(trial_frames{stim})) = smooth_zangle(trial_frames{stim});
-    plot(smooth_zangle(trial_frames{stim}), 'Color', [.7 .7 .7])
-end
-plot(nanmean(session_zangle))
-line([trial_length, trial_length], [min(smooth_zangle),max(smooth_zangle)]);
-line([trial_length*2, trial_length*2], [min(smooth_zangle),max(smooth_zangle)]);
-
-smooth_movdir = smooth(inthead * 180/3.14159, 21, 'sgolay', 7);
-movdir_diff = diff(smooth_movdir);
-figure; hold on
-smooth_movdir_diff = movmean(movdir_diff,10);
-for stim = 1:length(stim_starts);
-    session_movdir_diff(stim,1:length(trial_frames{stim})) = smooth_movdir_diff(trial_frames{stim});
-    plot(smooth_movdir_diff(trial_frames{stim}), 'Color', [.7 .7 .7])
-end
-plot(nanmean(session_movdir_diff))
-line([trial_length, trial_length], [min(smooth_movdir_diff),max(smooth_movdir_diff)]);
-line([trial_length*2, trial_length*2], [min(smooth_movdir_diff),max(smooth_movdir_diff)]);
-% figure; hold on
-% plot(smooth_spd)
-% plot(stim_frames, smooth_spd(stim_frames))
-% %Calculate and plot distance traveled
-% totaldist = radius*(sum(movspd));
-% dist = radius*movspd;
-% cdist = cumsum(dist);
-% strDist = sprintf('Total distance traveled: %d mm',totaldist);
-% 
-% figure;
-% hold on
-% plot(x,cdist,'k')
-% plot(x(stim_frames), cdist(stim_frames), "o")
-% xticks(0:fp30s:x(end))
-% xticklabels({'0','30','60','90','120','150','180','210','240','270','300'})
-% title('Cumulative distance traveled')
-% ylabel('Distance (mm)')
-% xlabel('Time (s)')
-% annotation('textbox',[[.4 0 .22 .22]],'String',strDist,'FitBoxToText','on')
-% 
-% plotname = 'DistanceTraveled.fig';
-% savefig(plotname);
-% close(gcf)
-% 
-% %Plot fictive path of fly
-% 
-% plot(intxposR(1),intyposR(1),'g.','markersize',20);
-% hold on
-% plot(intxposR(end),intyposR(end),'r.','markersize',20);
-% plot(intxposR,intyposR);
-% plot(intxposR(stim_frames), intyposR(stim_frames))
-% xlabel('mm')
-% ylabel('mm')
-% hold off
-% 
-% plotname = 'FictivePath.fig';
-% savefig(plotname);
-% close(gcf)

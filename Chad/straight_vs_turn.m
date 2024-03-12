@@ -18,89 +18,98 @@ function [] = straight_vs_turn(in, measure)
 %determine fly names
 flies = fieldnames(in);
 fr = 100; 
-x_axis = (1: length(in.(flies{1}).straight.(measure)))/fr;
+tasks = fieldnames(in.(flies{1}));
+
+x_axis = (1: length(in.(flies{1}).(tasks{1}).(measure)))/fr;
+color_seq = ["b", "r", "g", "m"];
 
 %loop through each fly
 for fly = 1: length(flies)
+    figure; hold on;
     tasks = fieldnames(in.(flies{fly}));
     % a = in.(flies{fly}).left.(measure);
     % n = 10; 
     % in.(flies{fly}).left.(measure) = arrayfun(@(i) mean(a(i:i+n-1)),1:n:length(a)-n+1)';
+    for task = 1: length(tasks)
 
-    if any(tasks == "left") & measure ~= "movspd";  %change the sign so that the odor delivery direction is always negative
-        in.(flies{fly}).left.(measure) = -in.(flies{fly}).left.(measure);
-    end
-    
-    if measure == "movdir" | measure == "inthead"; % find the difference between each points moving direction to determine the turning of the animal
-       
-        for task = 1:length(tasks)
+        if contains(tasks{task}, "left") & measure ~= "movspd";  %change the sign so that the odor delivery direction is always negative
+            in.(flies{fly}).(tasks{task}).(measure) = -in.(flies{fly}).(tasks{task}).(measure);
+        end
+        
+        if measure == "movdir" | measure == "inthead"; % find the difference between each points moving direction to determine the turning of the animal
+           
             x = diff(in.(flies{fly}).(tasks{task}).(measure));
             x = [0; x];
             x(x>5000) = x(x>5000) - 36000;
             x(x<-5000) = x(x<-5000) + 36000;
 
             in.(flies{fly}).(tasks{task}).(measure) = movmean(x, 10);
+    
         end
+    
+        %align data from each trial for the given measure
+        data = in.(flies{fly}).(tasks{task}).(measure);
+        trial_length(task,:) = in.(flies{fly}).(tasks{task}).trial_length;
+        trial_frames{task,:} = in.(flies{fly}).(tasks{task}).trial_frames;
+        % figure; hold on
+        smooth_data = movmean(data,10);
+        for stim = 1:size(trial_frames{task},2);
+            if trial_frames{task}{stim}(end) <= length(data);
+                session_data(fly,task,stim,1:length(trial_frames{task}{stim})) = smooth_data(trial_frames{task}{stim});
+            else
+                stim_data = smooth_data(trial_frames{task}{stim}(1):end);
+                session_data(fly,task,stim,1:length(stim_data));
+            end
+            % plot(smooth_data(trial_frames{stim}), 'Color', [.7 .7 .7])
+        end
+        
+        session_data(session_data == 0) == NaN;
+        %find the mean and SEM for data for each fly
+        data_mean(fly,task,1:length(squeeze(session_data(fly,task,:,:)))) = nanmean(squeeze(session_data(fly,task,:,:)));
+        data_sem(fly,task,1:length(squeeze(session_data(fly,task,:,:)))) = nanstd(squeeze(session_data(fly,task,:,:)))./sqrt(size(squeeze(session_data(fly,task,:,:)),1));
+        
+        % %align data for side odor deliver for each trial
+        % data_turn = in.(flies{fly}).(tasks{2}).(measure);
+        % turn_trial_length = in.(flies{fly}).(tasks{2}).trial_length;
+        % turn_trial_frames = in.(flies{fly}).(tasks{2}).trial_frames;
+        % % figure; hold on
+        % smooth_turn_data = movmean(data_turn,10);
+        % for stim = 1:length(turn_trial_frames);
+        %     session_turn_data(fly,stim,1:length(turn_trial_frames{stim})) = smooth_turn_data(turn_trial_frames{stim});
+        %     % plot(smooth_turn_data(turn_trial_frames{stim}), 'Color', [.7 .7 .7])
+        % end
+        % 
+        % %find mean and sem for each fly
+        % turn_data_mean(fly,1:length(squeeze(session_turn_data(fly,:,:)))) = nanmean(squeeze(session_turn_data(fly,:,:)));
+        % turn_data_sem(fly,1:length(squeeze(session_turn_data(fly,:,:)))) = nanstd(squeeze(session_turn_data(fly,:,:)))./sqrt(size(squeeze(session_turn_data(fly,:,:)),1));
+        % 
 
+        %plot data for each fly
+        x = x_axis(1:length(data_mean(fly,task,:)));
+        plot(x, squeeze(data_mean(fly,task,:)) + squeeze(data_sem(fly,task,:)),color_seq(task))
+        plot(x, squeeze(data_mean(fly,task,:))- squeeze(data_sem(fly,task,:)), color_seq(task))
+        plot(x, squeeze(data_mean(fly,task,:)), color_seq(task))
+        % x = x_axis(1:length(turn_data_mean));
+        % plot(x, turn_data_mean(fly,:)+turn_data_sem(fly,:),'k')
+        % plot(x, turn_data_mean(fly,:)-turn_data_sem(fly,:), 'k')
+        % plot(x, turn_data_mean(fly,:), 'g')
+        % line([x(trial_length), x(trial_length)], [min(smooth_data),max(smooth_data)]);
+        % line([x(trial_length)*2, x(trial_length)*2], [min(smooth_data),max(smooth_data)]);
+        if measure == "movspd"
+            ylabel("average speed mm/s")
+        else 
+            ylabel("average rotation degrees/s")
+        end
+        xlabel("times (s)")
+        %find average data for pre, during and post stimulus
+        task_mean(1,fly,task,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:,1:trial_length)),2);
+        task_mean(2,fly,task,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:,trial_length+1:trial_length *2)),2);
+        task_mean(3,fly,task,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:,trial_length * 2+1:end)),2);
+    
+        % turn_mean(1,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,1:trial_length)),2);
+        % turn_mean(2,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,trial_length+1:trial_length *2)),2);
+        % turn_mean(3,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,trial_length * 2+1:trial_length*2.5)),2);
     end
-
-    %align data from each trial for the given measure
-    data = in.(flies{fly}).straight.(measure);
-    trial_length = in.(flies{fly}).straight.trial_length;
-    trial_frames = in.(flies{fly}).straight.trial_frames;
-    % figure; hold on
-    smooth_data = movmean(data,10);
-    for stim = 1:length(trial_frames);
-        session_data(fly,stim,1:length(trial_frames{stim})) = smooth_data(trial_frames{stim});
-        % plot(smooth_data(trial_frames{stim}), 'Color', [.7 .7 .7])
-    end
-    
-    %find the mean and SEM for data for each fly
-    data_mean(fly,1:length(squeeze(session_data(fly,:,:)))) = nanmean(squeeze(session_data(fly,:,:)));
-    data_sem(fly,1:length(squeeze(session_data(fly,:,:)))) = nanstd(squeeze(session_data(fly,:,:)))./sqrt(size(squeeze(session_data(fly,:,:)),1));
-    
-    %align data for side odor deliver for each trial
-    data_turn = in.(flies{fly}).(tasks{2}).(measure);
-    turn_trial_length = in.(flies{fly}).(tasks{2}).trial_length;
-    turn_trial_frames = in.(flies{fly}).(tasks{2}).trial_frames;
-    % figure; hold on
-    smooth_turn_data = movmean(data_turn,10);
-    for stim = 1:length(turn_trial_frames);
-        session_turn_data(fly,stim,1:length(turn_trial_frames{stim})) = smooth_turn_data(turn_trial_frames{stim});
-        % plot(smooth_turn_data(turn_trial_frames{stim}), 'Color', [.7 .7 .7])
-    end
-    
-    %find mean and sem for each fly
-    turn_data_mean(fly,1:length(squeeze(session_turn_data(fly,:,:)))) = nanmean(squeeze(session_turn_data(fly,:,:)));
-    turn_data_sem(fly,1:length(squeeze(session_turn_data(fly,:,:)))) = nanstd(squeeze(session_turn_data(fly,:,:)))./sqrt(size(squeeze(session_turn_data(fly,:,:)),1));
-    
-    
-    %plot data for each fly
-    figure; hold on;
-    x = x_axis(1:length(data_mean));
-    plot(x, data_mean(fly,:)+data_sem(fly,:),'r')
-    plot(x, data_mean(fly,:)-data_sem(fly,:), 'r')
-    plot(x, data_mean(fly,:), 'b')
-    x = x_axis(1:length(turn_data_mean));
-    plot(x, turn_data_mean(fly,:)+turn_data_sem(fly,:),'k')
-    plot(x, turn_data_mean(fly,:)-turn_data_sem(fly,:), 'k')
-    plot(x, turn_data_mean(fly,:), 'g')
-    line([x(trial_length), x(trial_length)], [min(smooth_data),max(smooth_data)]);
-    line([x(trial_length)*2, x(trial_length)*2], [min(smooth_data),max(smooth_data)]);
-    if measure == "movspd"
-        ylabel("average speed mm/s")
-    else 
-        ylabel("average rotation degrees/s")
-    end
-    xlabel("times (s)")
-    %find average data for pre, during and post stimulus
-    straight_mean(1,fly,:) = nanmean(squeeze(session_data(fly,:,1:trial_length)),2);
-    straight_mean(2,fly,:) = nanmean(squeeze(session_data(fly,:,trial_length+1:trial_length *2)),2);
-    straight_mean(3,fly,:) = nanmean(squeeze(session_data(fly,:,trial_length * 2+1:trial_length*3)),2);
-
-    turn_mean(1,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,1:trial_length)),2);
-    turn_mean(2,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,trial_length+1:trial_length *2)),2);
-    turn_mean(3,fly,1:size(session_turn_data,2)) = nanmean(squeeze(session_turn_data(fly,:,trial_length * 2+1:trial_length*2.5)),2);
 end
 
 

@@ -24,7 +24,7 @@
 % after LED onset/offset for shutter command. 12ms/12ms seems to be also
 % acceptable, but we occasionally see LED light in the frame. We also see
 % vibration after opening of the shutter. It lasts roughly 180-200ms.
-
+clear odor
 nonstim=zeros(1,parameter.dur*parameter.ao_sr);
 
 if (parameter.stimN==0)||(parameter.stimD==0) %%We don't need stim in these cases.
@@ -78,12 +78,13 @@ u = udpport("byte", "IPV4", "LocalHost","127.0.0.1","LocalPort", PORT, "EnablePo
 %% Recording loop
 for i=1:parameter.numt;  
     %% Setup odor stim
-%     thisValve=odorstim{i,1};
-    thisOdor='ACV';
-    thisStim = 1;
-%     thisFirstD=odorstim{i,4};
-%     thisSecondD=odorstim{i,5};
-%     thisTotalD=odorstim{i,6};
+    odor.id{i} = odorstim{i,2}
+    thisValve=odorstim{i,1};
+    thisOdor=odorstim{i,2};
+    thisStim=odorstim{i,3};
+    thisFirstD=odorstim{i,4};
+    thisSecondD=odorstim{i,5};
+    thisTotalD=odorstim{i,6};
     set(nextodorh,'string',thisOdor)
     set(nextodorh,'ForegroundColor','r')
     
@@ -91,7 +92,9 @@ for i=1:parameter.numt;
     s=daq.createSession('ni');
     warning off
     ThisChName = {s.Channels.Name}';% Must be called before adding ao channels
-    addDigitalChannel(s,NIdaq.dev, 'port0/line0', 'OutputOnly'); %add odor valve port
+    channel = ['port0/line' num2str(thisValve - 1)];
+
+    addDigitalChannel(s,NIdaq.dev, channel, 'OutputOnly'); %add odor valve port
 %     SS=MakeDefaultAISession(NIdaq.dev,aichannels);
     SS=daq.createSession('ni');
 
@@ -138,18 +141,18 @@ for i=1:parameter.numt;
     toc
     if (u.NumBytesAvailable > 0)
         data = read(u, u.NumBytesAvailable, "string");
-        TextAsCells = regexp(data, '/n', 'split');
-        line = TextAsCells{end};
-        toks = strsplit(line, ',');
-% 
+        split = splitlines(data);
+        last_line = split{end-1};
+        toks = strsplit(last_line, ',');
+        
         if ((length(toks) < 24) | (toks(1) ~= "FT"))
             print("Bad read")
         else
-            cnt = str2num(toks{2})
+            odor.light_on(i) = str2num(toks{2})
         end
     end
     toc
-
+    flush(u);
     pause(parameter.preO - toc);
     
     outputSingleScan(s,0);
@@ -157,35 +160,35 @@ for i=1:parameter.numt;
     toc
     if (u.NumBytesAvailable > 0)
         data = read(u, u.NumBytesAvailable, "string");
-        TextAsCells = regexp(data, '/n', 'split');
-        line = TextAsCells{end};
+        split = splitlines(data);
+        line = split{end-1};
         toks = strsplit(line, ',');
-% 
+        
         if ((length(toks) < 24) | (toks(1) ~= "FT"))
             print("Bad read")
         else
-            cnt = str2num(toks{2})
+            odor.on(i) = str2num(toks{2})
         end
     end
     toc
 
     pause(FillTime) %fill time set in thstim
 %     StartScanImage_SS
-
+    flush(u);
     pause(parameter.odorD + parameter.preO - toc)
     outputSingleScan(s,1);
     
-        toc
+    toc
     if (u.NumBytesAvailable > 0)
         data = read(u, u.NumBytesAvailable, "string");
-        TextAsCells = regexp(data, '/n', 'split');
-        line = TextAsCells{end};
+        split = splitlines(data);
+        line = split{end-1};
         toks = strsplit(line, ',');
-% 
+        
         if ((length(toks) < 24) | (toks(1) ~= "FT"))
             print("Bad read")
         else
-            cnt = str2num(toks{2})
+            odor.off(i) = str2num(toks{2})
         end
     end
     toc
@@ -304,6 +307,8 @@ for i=1:parameter.numt;
     
     
 end
+save([PathName '\odor_delivery_' char(datetime('now','TimeZone','local','Format', 'MMM_dd_y_HH_mm_ss'))], 'odor')
+
 % shutAllValves_SS
 %QuickAOPutSample(NIdaq.dev,{'ao0','ao1'},0)
 set(nextodorh,'string','')
