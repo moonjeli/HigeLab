@@ -4,9 +4,8 @@ u = udpport("byte", "IPV4", "LocalHost","127.0.0.1","LocalPort", PORT, "EnablePo
 while true 
     if (u.NumBytesAvailable > 0)
         data = read(u, u.NumBytesAvailable, "string");
-        TextAsCells = regexp(data, '/n', 'split');
-        line = TextAsCells{1};
-        size(TextAsCells,2)
+        split = splitlines(data);
+        line = split{end-1};
         toks = strsplit(line, ',');
         
         if ((length(toks) < 24) | (toks(1) ~= "FT"))

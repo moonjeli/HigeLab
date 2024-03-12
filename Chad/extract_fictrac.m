@@ -1,19 +1,47 @@
 %% FicTracExtract.m
-function [out] = extract_fictrac(folder, thresh);
-main_folder = pwd;
-cd(folder);
-fictrac_dat = dir('*fictrac*.dat');
-fictrac_out = load(fictrac_dat.name);
+function [out] = extract_fictrac(fictrac_dat, vidLog, stim_file, thresh);
+fictrac_out = load(fictrac_dat);
 radius = 4.5;
 
-vidLog = dir('*vidLogFrames*.txt');
-log_frames = load(vidLog.name);
+log_frames = load(vidLog);
 
-stim_file = dir('*Results*.csv');
-stim_f = fopen(stim_file.name, 'r');
-dataArray = textscan(stim_f, '%f%f%f%[^\n\r]', 'Delimiter', ',', 'TextType', 'string', 'EmptyValue', NaN, 'HeaderLines' ,2-1, 'ReturnOnError', false, 'EndOfLine', '\r\n');
-fclose(stim_f);
-stim_trace = dataArray{3};
+%if it's mat file, load the starts, stops and ids of odor delivery
+if stim_file(end-3:end) == '.mat';
+    odor_delivery = load(stim_file);
+    stim_starts = odor_delivery.odor.on;
+    stim_ends = odor_delivery.odor.off;
+    odor_id = odor_delivery.odor.id;
+
+    %if not load the csv from imagej of the light turning on, and find
+    %where the light turns on and off indicating odor on vs off. 
+else
+    stim_f = fopen(stim_file, 'r');
+    dataArray = textscan(stim_f, '%f%f%f%[^\n\r]', 'Delimiter', ',', 'TextType', 'string', 'EmptyValue', NaN, 'HeaderLines' ,2-1, 'ReturnOnError', false, 'EndOfLine', '\r\n');
+    fclose(stim_f);
+    stim_trace = dataArray{3};
+    if ~exist("thresh","var")
+    
+        figure; 
+        hold on
+        plot(stim_trace)
+        thresh = input('input threshold:  ');
+    end
+    
+    % thresh = nanmean(stim_detrend(1:2000)) + 5 * std(stim_detrend(1:2000));
+    stim_smooth = smooth(stim_trace, 15, 'sgolay', 7);
+    BW2 = bwlabel(stim_smooth > thresh);
+    stim_starts = [];
+    stim_ends = [];
+    i = 1;
+    for stim =1: max(BW2);
+        if sum(BW2 == stim) < 600 | sum(BW2 == stim) > 2000;
+        else
+            stim_starts(i) = find(BW2 == stim,1);
+            stim_ends(i)= find(BW2 == stim, 1, 'last');
+            i = i + 1;
+        end
+    end
+end
 
 %Descriptive FicTrac variable names assigned below
 frame = fictrac_out(:,1); %frame counter
@@ -68,29 +96,7 @@ out.intyposR = intyposR;
 % else
 %     stim_detrend = stim_trace;
 % end
-if ~exist("thresh","var")
 
-    figure; 
-    hold on
-    plot(stim_trace)
-    thresh = input('input threshold:  ');
-end
-
-
-% thresh = nanmean(stim_detrend(1:2000)) + 5 * std(stim_detrend(1:2000));
-stim_smooth = smooth(stim_trace, 15, 'sgolay', 7);
-BW2 = bwlabel(stim_smooth > thresh);
-stim_starts = [];
-stim_ends = [];
-i = 1;
-for stim =1: max(BW2);
-    if sum(BW2 == stim) < 600 | sum(BW2 == stim) > 2000;
-    else
-        stim_starts(i) = find(BW2 == stim,1);
-        stim_ends(i)= find(BW2 == stim, 1, 'last');
-        i = i + 1;
-    end
-end
 
 
 frame_starts = log_frames(stim_starts);
@@ -104,10 +110,8 @@ for stim = 1:length(stim_starts)
     trial_length = trial_end{stim}-trial_start{stim};
     trial_frames{stim} = trial_start{stim}-trial_length:trial_end{stim}+trial_length;
     stim_frames = [stim_frames, trial_start{stim}:trial_end{stim}];
-    trial_x{stim} = trial_frames{stim} - trial_start{stim};
 end
 
-out.trial_x = trial_x;
 out.trial_start = trial_start;
 out.trail_end = trial_end;
 out.trial_length = trial_length;
@@ -120,5 +124,4 @@ out.drotvlz = drotvlz * fps *180/3.14159;
 out.movdir = movdir * fps * 180/3.14159;
 out.inthead = inthead * fps *180/3.14159;
 
-cd(main_folder)
 end

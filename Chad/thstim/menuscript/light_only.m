@@ -137,14 +137,14 @@ for i=1:parameter.numt;
     toc
     if (u.NumBytesAvailable > 0)
         data = read(u, u.NumBytesAvailable, "string");
-        TextAsCells = regexp(data, '/n', 'split');
-        line = TextAsCells{end};
+        split = splitlines(data);
+        line = split{end-1};
         toks = strsplit(line, ',');
-% 
+        
         if ((length(toks) < 24) | (toks(1) ~= "FT"))
             print("Bad read")
         else
-            cnt = str2num(toks{2})
+            odor.off(i) = str2num(toks{2})
         end
     end
     toc
