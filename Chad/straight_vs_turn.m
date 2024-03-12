@@ -20,6 +20,8 @@ flies = fieldnames(in);
 tasks = fieldnames(in.(flies{1}));
 
 fr = 100; 
+odor_delay = 1 * fr; %hard code in the delay from switch to odor delivery
+
 x_axis = (1: length(in.(flies{1}).(tasks{1}).(measure)))/fr;
 color_seq = ["b", "r", "g", "m"];
 %loop through each fly
@@ -58,7 +60,7 @@ for fly = 1: length(flies)
         length_x = 1:length(x_axis);
 
         % figure; hold on
-        smooth_data = movmean(data,10);
+        smooth_data = movmean(data,30);
         for stim = 1:length(trial_frames);
             
             if trial_frames{stim}(end) > length(data)
@@ -102,11 +104,19 @@ for fly = 1: length(flies)
         end
         xlabel("times (s)")
         title(flies{fly});
+        session_data(session_data == 0) = NaN;
         %find average data for pre, during and post stimulus
-        task_mean.(tasks{task})(1,fly,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:, 5001-trial_length(fly,task):5000)),2);
-        task_mean.(tasks{task})(2,fly,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:,5001:5000 + trial_length(fly,task))),2);
-        task_mean.(tasks{task})(3,fly,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:,5000 + trial_length(fly,task): end)),2);
-    
+        
+        if measure == "inhead"
+            trial_length(fly,task) = 3 * fr;
+        end
+        
+        task_mean.(tasks{task})(1,fly,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:, 5001-trial_length(fly,task) + odor_delay:5000+ odor_delay)),2);
+        task_mean.(tasks{task})(2,fly,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:,5001+ odor_delay:5000 + odor_delay + trial_length(fly,task))),2);
+        task_mean.(tasks{task})(3,fly,1:size(session_data,3)) = nanmean(squeeze(session_data(fly,task,:,5000 + odor_delay + trial_length(fly,task): end)),2);
+        
+        task_mean.(tasks{task})(task_mean.(tasks{task}) == 0) = NaN;
+
         task_response.(tasks{task}) = squeeze(nanmean(task_mean.(tasks{task}),3));
 
     end
@@ -180,6 +190,7 @@ end
 % for trial = 1:size(trial_mean,1)
 %     plot(trial_mean(trial,:), 'Color', colors_p(trial,:));
 % end
+%% 
 
 %find population mean and sem for straight and side trials
 figure; hold on
@@ -207,13 +218,14 @@ for task = 1: length(tasks)
     % plot(x, turn_pop_mean + turn_pop_sem, 'Color', [0 .7 .7]);
     % plot(x, turn_pop_mean - turn_pop_sem, 'Color', [0 .7 .7]);
     % plot(x, turn_pop_mean, 'b', "DisplayName", "side odor")
-    line([0, 0], [min(smooth_data),max(smooth_data)],'Color', 'k');
+    line([0 + odor_delay/fr, 0+ odor_delay/fr], [min(smooth_data),max(smooth_data)],'Color', 'k');
+    line([12+ odor_delay/fr, 12+ odor_delay/fr], [min(smooth_data),max(smooth_data)],'Color', 'k');
     % line([13*2, 13*2], [min(smooth_data),max(smooth_data)], 'Color','k');
     % label{end+1} = tasks{task};
     % label{end+1} = '';
 
-    xlim([0 35])
-    ylim([0 100])
+    xlim([-12 24])
+    ylim([0 max(pop_mean) + 10])
     if measure == "movspd"  
         ylabel("average speed mm/s")
     else 
