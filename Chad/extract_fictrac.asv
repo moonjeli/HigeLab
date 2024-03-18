@@ -11,7 +11,7 @@ vidLog = dir('*vidLogFrames*.txt');
 log_frames = load(vidLog.name);
 
 stim_file = dir('*odor_delivery*.mat');
-
+stim_file = stim_
 if isempty(stim_file);
     stim_file = dir('*Results*.csv');
 end
@@ -19,7 +19,7 @@ end
 frame = fictrac_out(:,1); %frame counter
 
 %if it's mat file, load the starts, stops and ids of odor delivery
-if stim_file.name(end-3:end) == '.mat';
+if stim_file(end-3:end) == '.mat';
     odor_delivery = load(stim_file.name);
     stim_starts = odor_delivery.odor.on;
     stim_end = odor_delivery.odor.off;
@@ -120,10 +120,8 @@ for stim = 1:length(stim_starts)
     trial_length = trial_end{stim}-trial_start{stim};
     trial_frames{stim} = trial_start{stim}-trial_length:trial_end{stim}+trial_length;
     stim_frames = [stim_frames, trial_start{stim}:trial_end{stim}];
-    trial_x{stim} = trial_frames{stim} - trial_start{stim};
 end
 
-out.trial_x = trial_x;
 out.trial_start = trial_start;
 out.trail_end = trial_end;
 out.trial_length = trial_length;

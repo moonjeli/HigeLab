@@ -39,6 +39,7 @@ for fly = 1: length(flies)
         end
         
         if  measure == "inthead"; % find the difference between each points moving direction to determine the turning of the animal
+           
             x = diff(in.(flies{fly}).(tasks{task}).(measure));
             x = [0; x];
             x(x>5000) = x(x>5000) - 36000;
@@ -46,15 +47,8 @@ for fly = 1: length(flies)
 
             in.(flies{fly}).(tasks{task}).(measure) = movmean(x, 10);
         elseif measure == "movdir"
-            x = diff(in.(flies{fly}).(tasks{task}).(measure));
-            x = [0; x];
-            x(x>5000) = x(x>5000) - 36000;
-            x(x<-5000) = x(x<-5000) + 36000;
+        
 
-            x = x - nanmean(x);
-
-            in.(flies{fly}).(tasks{task}).(measure) = movmean(x, 10)
-            
         end
         
         %if odor id is provided, grab it
@@ -87,7 +81,7 @@ for fly = 1: length(flies)
         length_x = 1:length(x_axis);
 
         % figure; hold on
-        smooth_data = movmean(data,50);
+        smooth_data = movmean(data,30);
 
         clear session_data;
 

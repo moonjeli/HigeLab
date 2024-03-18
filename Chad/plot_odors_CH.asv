@@ -115,15 +115,15 @@ plot(movdir)
 hold on
 movdir = movdir + inthead;
 plot (movdir)
-movdir = movdir * fps * 180/3.14159;
+inthead = inthead * fps * 180/3.14159;
 
-x = diff(movdir);
+x = diff(inthead);
 x = [0; x];
 x(x>5000) = x(x>5000) - 36000;
 x(x<-5000) = x(x<-5000) + 36000;
 x = x- nanmean(x);
 
-movdir = movmean(x, 10);
+inthead = movmean(x, 10);
 
 if ~exist("odor_id", "var")
     odor_id = "odor1";
