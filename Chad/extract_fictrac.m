@@ -44,7 +44,7 @@ if stim_file.name(end-3:end) == '.mat';
 else
     vidLog = dir('*vidLogFrames*.txt');
     log_frames = load(vidLog.name);
-    stim_f = fopen(stim_file, 'r');
+    stim_f = fopen(stim_file.name, 'r');
     dataArray = textscan(stim_f, '%f%f%f%[^\n\r]', 'Delimiter', ',', 'TextType', 'string', 'EmptyValue', NaN, 'HeaderLines' ,2-1, 'ReturnOnError', false, 'EndOfLine', '\r\n');
     fclose(stim_f);
     stim_trace = dataArray{3};
@@ -53,7 +53,10 @@ else
     figure; 
     hold on
     plot(stim_trace)
-    thresh = input('input threshold:  ');
+
+    if isempty(thresh)
+        thresh = input('input threshold:  ');
+    end
     
 
     stim_smooth = smooth(stim_trace, 15, 'sgolay', 7);
@@ -75,6 +78,7 @@ else
 
     frame_starts = log_frames(stim_starts);
     frame_ends = log_frames(stim_ends);
+    
 end
 
 %Descriptive FicTrac variable names assigned below
@@ -154,7 +158,13 @@ out.drotvly = drotvly * fps *180/3.14159;
 out.drotvlz = drotvlz * fps *180/3.14159;
 out.movdir = movdir * fps * 180/3.14159;
 out.inthead = inthead * fps *180/3.14159;
-out.odor_id = odor_id;
+
+if exist("odor_id", 'var')
+    out.odor_id = odor_id;
+else
+    for i=1: length(stim_starts)
+    out.odor_id(i) = "odor1";
+end
 
 % change the wd back to the main folder
 cd(main_folder);
