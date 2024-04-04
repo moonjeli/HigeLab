@@ -163,8 +163,10 @@ if exist("odor_id", 'var')
     out.odor_id = odor_id;
 else
     for i=1: length(stim_starts)
-    out.odor_id(i) = "odor1";
+        out.odor_id(i) = "odor1";
+    end
 end
+
 
 % change the wd back to the main folder
 cd(main_folder);
