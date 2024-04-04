@@ -1,25 +1,37 @@
 %% FicTracExtract.m
+
+%INPUTS
+%folder = folder where fictrac data is found
+%thresh = optional variable, set threshold for fiji output tracking led
+%turning on and off indicating odor delivery
+
 function [out] = extract_fictrac(folder, thresh);
 
+%find current folder wd
 main_folder = pwd;
+%change wd to folder with data
 cd(folder);
+
+%find fictrac data output
 fictrac_dat = dir('*fictrac*.dat');
 fictrac_out = load(fictrac_dat.name);
+%set radius of ball
 radius = 4.5;
 
-vidLog = dir('*vidLogFrames*.txt');
-log_frames = load(vidLog.name);
-
+%grab odor_delivery output file from thstim if it exists
 stim_file = dir('*odor_delivery*.mat');
-stim_file = stim_
+
 if isempty(stim_file);
+
+    %if it does not exist grab the fiji output csv
     stim_file = dir('*Results*.csv');
 end
 
+
 frame = fictrac_out(:,1); %frame counter
 
-%if it's mat file, load the starts, stops and ids of odor delivery
-if stim_file(end-3:end) == '.mat';
+%if it's the thstim mat file, load the starts, stops and ids of odor delivery
+if stim_file.name(end-3:end) == '.mat';
     odor_delivery = load(stim_file.name);
     stim_starts = odor_delivery.odor.on;
     stim_end = odor_delivery.odor.off;
@@ -30,18 +42,23 @@ if stim_file(end-3:end) == '.mat';
     %if not load the csv from imagej of the light turning on, and find
     %where the light turns on and off indicating odor on vs off. 
 else
-   stim_f = fopen(stim_file, 'r');
+    vidLog = dir('*vidLogFrames*.txt');
+    log_frames = load(vidLog.name);
+    stim_f = fopen(stim_file, 'r');
     dataArray = textscan(stim_f, '%f%f%f%[^\n\r]', 'Delimiter', ',', 'TextType', 'string', 'EmptyValue', NaN, 'HeaderLines' ,2-1, 'ReturnOnError', false, 'EndOfLine', '\r\n');
     fclose(stim_f);
     stim_trace = dataArray{3};
     
+    %plot the csv trace and set a threshold
     figure; 
     hold on
     plot(stim_trace)
     thresh = input('input threshold:  ');
     
-    % thresh = nanmean(stim_detrend(1:2000)) + 5 * std(stim_detrend(1:2000));
+
     stim_smooth = smooth(stim_trace, 15, 'sgolay', 7);
+    
+    %use that threshold to find the times where the led turns on and off in
     BW2 = bwlabel(stim_smooth > thresh);
     stim_starts = [];
     stim_ends = [];
@@ -120,8 +137,10 @@ for stim = 1:length(stim_starts)
     trial_length = trial_end{stim}-trial_start{stim};
     trial_frames{stim} = trial_start{stim}-trial_length:trial_end{stim}+trial_length;
     stim_frames = [stim_frames, trial_start{stim}:trial_end{stim}];
+    trial_x{stim} = trial_frames{stim} - trial_start{stim};
 end
 
+out.trial_x = trial_x;
 out.trial_start = trial_start;
 out.trail_end = trial_end;
 out.trial_length = trial_length;

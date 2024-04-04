@@ -1,24 +1,36 @@
 %% FicTracExtract.m
+
+%INPUTS
+%folder = folder where fictrac data is found
+%thresh = optional variable, set threshold for fiji output tracking led
+%turning on and off indicating odor delivery
+
 function [out] = extract_fictrac(folder, thresh);
 
+%find current folder wd
 main_folder = pwd;
+%change wd to folder with data
 cd(folder);
+
+%find fictrac data output
 fictrac_dat = dir('*fictrac*.dat');
 fictrac_out = load(fictrac_dat.name);
+%set radius of ball
 radius = 4.5;
 
-vidLog = dir('*vidLogFrames*.txt');
-log_frames = load(vidLog.name);
-
+%grab odor_delivery output file from thstim if it exists
 stim_file = dir('*odor_delivery*.mat');
 
 if isempty(stim_file);
+
+    %if it does not exist grab the fiji output csv
     stim_file = dir('*Results*.csv');
 end
 
+
 frame = fictrac_out(:,1); %frame counter
 
-%if it's mat file, load the starts, stops and ids of odor delivery
+%if it's the thstim mat file, load the starts, stops and ids of odor delivery
 if stim_file.name(end-3:end) == '.mat';
     odor_delivery = load(stim_file.name);
     stim_starts = odor_delivery.odor.on;
@@ -30,18 +42,24 @@ if stim_file.name(end-3:end) == '.mat';
     %if not load the csv from imagej of the light turning on, and find
     %where the light turns on and off indicating odor on vs off. 
 else
-   stim_f = fopen(stim_file, 'r');
+    vidLog = dir('*vidLogFrames*.txt');
+    log_frames = load(vidLog.name);
+    stim_f = fopen(stim_file, 'r');
     dataArray = textscan(stim_f, '%f%f%f%[^\n\r]', 'Delimiter', ',', 'TextType', 'string', 'EmptyValue', NaN, 'HeaderLines' ,2-1, 'ReturnOnError', false, 'EndOfLine', '\r\n');
     fclose(stim_f);
     stim_trace = dataArray{3};
     
+    %plot the csv trace and set a threshold
     figure; 
     hold on
     plot(stim_trace)
     thresh = input('input threshold:  ');
     
-    % thresh = nanmean(stim_detrend(1:2000)) + 5 * std(stim_detrend(1:2000));
+
     stim_smooth = smooth(stim_trace, 15, 'sgolay', 7);
+    
+    %use that threshold to find the times where the led turns on and off
+    %indicating odor on vs off
     BW2 = bwlabel(stim_smooth > thresh);
     stim_starts = [];
     stim_ends = [];
@@ -82,16 +100,19 @@ intformot = fictrac_out(:,20); %integrated forward motion (lc) X
 intsidmot = fictrac_out(:,21); %integrated side motion (lc) Y
 time = fictrac_out(:,22); %timestamp
 seq = fictrac_out(:,23); %sequence counter
+
 %x and fps for plots
 x = (1:length(frame));
 fps = 100;
 fp30s = fps*30;
 
-%Correct jumps in x and y position due to tracking resets
+%convert x and y units to lab units (mm)
 intxposR = intxpos*radius;
 intyposR = intypos*radius;
 x_diff = diff(intxposR);
 y_diff = diff(intyposR);
+
+%Correct jumps in x and y position due to tracking resets
 errors = abs(x_diff) > 3 | abs(y_diff) > 3;
 BW = bwlabel(errors);
 for err = 1: sum(errors)
@@ -102,18 +123,15 @@ for err = 1: sum(errors)
     intyposR(find(BW == err,1)+1:end) = intyposR(find(BW == err,1)+1:end) - y_diff(find(BW == err,1));
 end
 
+%collect x and y for output
 out.intxposR = intxposR;
 out.intyposR = intyposR;
 
-%Designate stimulus frames
-% if nanmean(stim_trace(1:2000) + 5 * std(stim_trace(1:2000))) < nanmean(stim_trace(end-2000:end))
-%     stim_detrend = detrend(stim_trace);
-% else
-%     stim_detrend = stim_trace;
-% end
 
 stim_frames = [];
 
+% for each trial, find the start, end, length, frames along with frames
+% before and after trial, and the frame number for each point
 for stim = 1:length(stim_starts)
     trial_start{stim} = frame(find(frame > frame_starts(stim),1));
     trial_end{stim} = frame(find(frame < frame_ends(stim),1,'last'));
@@ -123,6 +141,7 @@ for stim = 1:length(stim_starts)
     trial_x{stim} = trial_frames{stim} - trial_start{stim};
 end
 
+%collect variables for output and convert to the correct units
 out.trial_x = trial_x;
 out.trial_start = trial_start;
 out.trail_end = trial_end;
@@ -137,6 +156,7 @@ out.movdir = movdir * fps * 180/3.14159;
 out.inthead = inthead * fps *180/3.14159;
 out.odor_id = odor_id;
 
+% change the wd back to the main folder
 cd(main_folder);
 
 end

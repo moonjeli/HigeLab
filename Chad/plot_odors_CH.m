@@ -23,9 +23,6 @@ file = uigetfile('*.dat');
 fictrac_out = load(file);
 radius = 4.5;
 
-vidLog = uigetfile('*.txt');
-log_frames = load(vidLog);
-
 frame = fictrac_out(:,1); %frame counter
 
 stim_file = uigetfile;
@@ -37,6 +34,8 @@ if stim_file(end-3:end) == '.mat';
     frame_ends = find(ismember(frame,stim_end));
     odor_id = odor_delivery.odor.id;
 else
+    vidLog = uigetfile('*.txt');
+    log_frames = load(vidLog);
     stim_f = fopen(stim_file, 'r');
     dataArray = textscan(stim_f, '%f%f%f%[^\n\r]', 'Delimiter', ',', 'TextType', 'string', 'EmptyValue', NaN, 'HeaderLines' ,2-1, 'ReturnOnError', false, 'EndOfLine', '\r\n');
     fclose(stim_f);
@@ -111,19 +110,16 @@ for err = 1: sum(errors)
 end
 
  % find the difference between each points moving direction to determine the turning of the animal
-plot(movdir) 
-hold on
-movdir = movdir + inthead;
-plot (movdir)
-movdir = movdir * fps * 180/3.14159;
 
-x = diff(movdir);
+inthead = inthead * fps * 180/3.14159;
+
+x = diff(inthead);
 x = [0; x];
 x(x>5000) = x(x>5000) - 36000;
 x(x<-5000) = x(x<-5000) + 36000;
 x = x- nanmean(x);
 
-movdir = movmean(x, 10);
+inthead = movmean(x, 10);
 
 if ~exist("odor_id", "var")
     odor_id = "odor1";
@@ -184,14 +180,13 @@ for o = 1: length(odors)
     max_length = max(cell2mat(cellfun(@size,trial_frames.(odors{o}),'uni',false)));
     session_turn = NaN(length(stim_starts), max_length);
     for stim = 1:length(trial_frames.(odors{o}));
-        session_turn(stim,1:length(trial_frames.(odors{o}){stim})) = movdir(trial_frames.(odors{o}){stim});
+        session_turn(stim,1:length(trial_frames.(odors{o}){stim})) = inthead(trial_frames.(odors{o}){stim});
         % plot(movdir(trial_frames.(odors{o}){stim}), 'Color', [.7 .7 .7])
     end
     plot(nanmean(session_turn), 'DisplayName', odors{o})
     sem = nanstd(session_turn)./sqrt(size(session_turn,1));
     % plot(nanmean(session_turn)+sem,'r')
     % plot(nanmean(session_turn)-sem, 'r')
-    line([trial_length, trial_length], [min(movdir),max(movdir)]);
-    line([2*trial_length, 2*trial_length], [min(movdir),max(movdir)]);
+    line([trial_length, trial_length], [min(inthead),max(inthead)]);
+    line([2*trial_length, 2*trial_length], [min(inthead),max(inthead)]);
 end
-
