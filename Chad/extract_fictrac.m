@@ -17,6 +17,7 @@ fictrac_dat = dir('*fictrac*.dat');
 fictrac_out = load(fictrac_dat.name);
 %set radius of ball
 radius = 4.5;
+fps = 100;
 
 %grab odor_delivery output file from thstim if it exists
 stim_file = dir('*odor_delivery*.mat');
@@ -68,8 +69,9 @@ else
     stim_ends = [];
     i = 1;
     for stim =1: max(BW2);
-        if sum(BW2 == stim) < 600 | sum(BW2 == stim) > 2000;
+        if sum(BW2 == stim) < 200 | sum(BW2 == stim) > 2000;
         else
+
             stim_starts(i) = find(BW2 == stim,1);
             stim_ends(i)= find(BW2 == stim, 1, 'last');
             i = i + 1;
@@ -137,8 +139,18 @@ stim_frames = [];
 % for each trial, find the start, end, length, frames along with frames
 % before and after trial, and the frame number for each point
 for stim = 1:length(stim_starts)
-    trial_start{stim} = frame(find(frame > frame_starts(stim),1));
-    trial_end{stim} = frame(find(frame < frame_ends(stim),1,'last'));
+
+    if odor_id{stim} == "MCH";
+        odor_delay = 2 * fps;
+    elseif odor_id{stim} == "OCT";
+        odor_delay = 2 * fps;
+    elseif odor_id{stim} == "acv";
+        odor_delay = 1 * fps;
+    end
+
+
+    trial_start{stim} = frame(find(frame > frame_starts(stim),1)) + odor_delay;
+    trial_end{stim} = frame(find(frame < frame_ends(stim),1,'last')) + odor_delay;
     trial_length = trial_end{stim}-trial_start{stim};
     trial_frames{stim} = trial_start{stim}-trial_length:trial_end{stim}+trial_length;
     stim_frames = [stim_frames, trial_start{stim}:trial_end{stim}];
@@ -163,7 +175,8 @@ if exist("odor_id", 'var')
     out.odor_id = odor_id;
 else
     for i=1: length(stim_starts)
-    out.odor_id(i) = "odor1";
+        out.odor_id(i) = "odor1";
+    end
 end
 
 % change the wd back to the main folder
