@@ -4,7 +4,7 @@ close all
 %% 04022024
 % odor_pairing/04022024/Fly001/
 
-folder = 'odor_pairing/04022024/Fly001/ACV_straight';
+folder = 'odor_pairing/04022024/fly001/ACV_straight';
 
 data.fly04022024_001.ACV_straight = extract_fictrac(folder);
 

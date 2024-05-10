@@ -75,7 +75,7 @@ for fly = 1: length(flies)
             
                 % normalize fluorescence trace to the mean of each trial
                 % and find the mean traces
-            norm_trace = odor_trace{o} ./ squeeze(nanmean(odor_trace{o},3));
+            norm_trace = odor_trace{o} ./ squeeze(min(odor_trace{o},3));
             
             mean_response = squeeze(nanmean(trial_trace,1));
             
@@ -86,12 +86,13 @@ for fly = 1: length(flies)
             x_time = ((1:length(mean_norm_trace)) / fr) - (odor_on + odor_delay);
             subplot(2,1,1)
             h = plot(x_time, mean_norm_trace')
+            title([flies{fly} ' ' tasks{task}])
             legend(lobe_id)
             hold on
     
             lims = ylim 
-            line([0 0], [lims(1) lims(2)])
-            line([odor_dur,  odor_dur], [lims(1) lims(2)], 'k')
+            line([0 0], [lims(1) lims(2)], "color", 'k')
+            line([odor_dur,  odor_dur], [lims(1) lims(2)], "color", 'k')
 
             % normalize behavior to the mean of each trial and find the
             % mean traces
@@ -106,8 +107,8 @@ for fly = 1: length(flies)
             legend(measure)
 
             lims = ylim 
-            line([0 0], [lims(1) lims(2)])
-            line([odor_dur,  odor_dur], [lims(1) lims(2)])
+            line([0 0], [lims(1) lims(2)], "color", 'k')
+            line([odor_dur,  odor_dur], [lims(1) lims(2)], "color", 'k')
 
             title(odors{o})
 

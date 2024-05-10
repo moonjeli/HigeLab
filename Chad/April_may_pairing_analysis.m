@@ -41,25 +41,25 @@ data.fly04162024_001.post_pairing_right = extract_fictrac(folder);
 data.fly04162024_001.post_pairing_right.paired_odor = "MCH";
 data.fly04162024_001.pre_pairing_right.paired_odor = "MCH";
 
-%% 04162024 004
-% odor_pairing/04162024/Fly004/
-
-folder = 'odor_pairing/04162024/Fly004/ACV_left';
-
-data.fly04162024_004.ACV_left = extract_fictrac(folder);
-
-%pre_pairing
-folder = 'odor_pairing/04162024/Fly004/pre_pairing';
-
-data.fly04162024_004.pre_pairing_left = extract_fictrac(folder);
-
-%post_pairing
-folder = 'odor_pairing/04162024/Fly004/post_pairing';
-
-data.fly04162024_004.post_pairing_left = extract_fictrac(folder);
-
-data.fly04162024_004.post_pairing_left.paired_odor = "MCH";
-data.fly04162024_004.pre_pairing_left.paired_odor = "MCH";
+%% 04162024 004 some flying
+% % odor_pairing/04162024/Fly004/
+% 
+% folder = 'odor_pairing/04162024/Fly004/ACV_left';
+% 
+% data.fly04162024_004.ACV_left = extract_fictrac(folder);
+% 
+% %pre_pairing
+% folder = 'odor_pairing/04162024/Fly004/pre_pairing';
+% 
+% data.fly04162024_004.pre_pairing_left = extract_fictrac(folder);
+% 
+% %post_pairing
+% folder = 'odor_pairing/04162024/Fly004/post_pairing';
+% 
+% data.fly04162024_004.post_pairing_left = extract_fictrac(folder);
+% 
+% data.fly04162024_004.post_pairing_left.paired_odor = "MCH";
+% data.fly04162024_004.pre_pairing_left.paired_odor = "MCH";
 
 %% 04182024 003
 % odor_pairing/04182024/Fly003/
@@ -385,9 +385,11 @@ data.fly05082024_003.post_pairing_left= extract_fictrac(folder);
 
 data.fly05082024_003.post_pairing_left.paired_odor = "MCH";
 data.fly05082024_003.pre_pairing_left.paired_odor = "MCH";
+
 %%
+save('april_may_analysis', "data");
 
-
+%%
 
 straight_vs_turn(data, ['inthead'])
 
