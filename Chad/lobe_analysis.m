@@ -1,7 +1,6 @@
 function[] = lobe_analysis(in, measure, lobe_id);
 
 flies = fieldnames(in);
-fr = 30;                % set frame rate for imaing
 odor_delay = 0.3 % odor delay in seconds
 beh_fr = 100;           % set frame rate for fictrac
 
@@ -16,6 +15,7 @@ for fly = 1: length(flies)
         
     %loop through each task
     for task = 1: length(tasks)
+        fr = in.(flies{fly}).(tasks{task}).fr;
 
         % find the odor_id for a given task, and asign the delay for the
         % odor delivery for that task
@@ -75,7 +75,7 @@ for fly = 1: length(flies)
             
                 % normalize fluorescence trace to the mean of each trial
                 % and find the mean traces
-            norm_trace = odor_trace{o} ./ squeeze(nanmean(odor_trace{o},3));
+            norm_trace = odor_trace{o};
             
             mean_response = squeeze(nanmean(trial_trace,1));
             
