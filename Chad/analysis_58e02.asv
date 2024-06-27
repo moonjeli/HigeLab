@@ -15,6 +15,7 @@ purple = [144 103 167]./255;
 cl_colors = {blue, red, ...
              green, brown, purple};
 
+
 %loop through each fly
 for fly = 1: length(flies)
     %find tasks for given fly
@@ -46,7 +47,7 @@ for fly = 1: length(flies)
         % length_x = 1:length(x_axis);
 
         % smooth data
-        smooth_behavior = movmean(behavior, 30);
+        smooth_behavior = movmean(behavior, 100);
 
     
         %make sure session data is empty
@@ -63,7 +64,7 @@ for fly = 1: length(flies)
             for roi = 1: size(data.F,2)
         
                 trial_trace(trial, roi, :) = table2array(data.F((trial-1) * recording_length  + 1:trial * recording_length,roi));
-                trial_trace(trial,roi,:) = smooth(trial_trace(trial, roi, :), 20, "sgolay", 7);
+                trial_trace(trial,roi,:) = movmean(trial_trace(trial, roi, :), 30);
           
             end
             
@@ -82,7 +83,7 @@ for fly = 1: length(flies)
             
                 % normalize fluorescence trace to the mean of each trial
                 % and find the mean traces
-            norm_trace = 1 - odor_trace{o}./squeeze(nanmean(odor_trace{o},3)) + 1;
+            norm_trace = odor_trace{o}./squeeze(nanmean(odor_trace{o},3));
 
             mean_response = squeeze(nanmean(trial_trace,1));
             
@@ -118,14 +119,32 @@ for fly = 1: length(flies)
                 set(gcf,'position',[x0,y0,width,height])
 
             end
-
+            
             % normalize behavior to the mean of each trial and find the
             % mean traces
             norm_beh = beh_odor{o} ./ squeeze(nanmean(beh_odor{o},2));
             mean_beh = squeeze(nanmean(beh_odor{o},1));
             
             %plot behavior
-            % 
+            for trial = 1:size(norm_trace,1)
+
+                for roi = 1: size(norm_trace,2)
+                                    figure; hold on
+
+                    x_f = ((1:length(norm_trace)) / fr);
+                    yyaxis left
+                    plot(x_f, squeeze(norm_trace(trial,roi,:)), 'DisplayName', lobe_id{roi})
+                    xlim([0,100])
+    
+                    x_beh = ((1:length(beh_odor{o}))/ beh_fr);
+                    yyaxis right
+                    plot(x_beh,beh_odor{o}(trial,:), 'DisplayName', 'speed (mm/s)');
+                    legend
+
+                end
+                
+            end
+
             % x_time = ((1:length(mean_beh)) / beh_fr) - (odor_on + odor_delay);
             % subplot(2,1,2)
             % j = plot(x_time, mean_beh')
