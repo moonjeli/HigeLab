@@ -62,7 +62,7 @@ for fly = 1: length(flies)
 
             for roi = 1: size(data.F,2)
         
-                trial_trace(trial, roi, :) = table2array(data.F((trial-1) * recording_length  + 1:trial * recording_length,roi));
+                trial_trace(trial, roi, :) = (data.F((trial-1) * recording_length  + 1:trial * recording_length,roi));
                 trial_trace(trial,roi,:) = smooth(trial_trace(trial, roi, :), 20, "sgolay", 7);
           
             end

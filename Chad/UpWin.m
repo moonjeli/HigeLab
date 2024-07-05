@@ -48,7 +48,7 @@ data.fly05212024_000.session1.fr = 30/6;
 
 %% ImagingData/06072024/fly002
 % 
-folder = 'ImagingData/06072024';
+folder = ['UPWIN/06072024/fly002/session2'];
 
 data.fly06072024.session2 = extract_data(folder);
 data.fly06072024.session2.fr = 30/6;

@@ -63,8 +63,8 @@ for fly = 1: length(flies)
 
             for roi = 1: size(data.F,2)
         
-                trial_trace(trial, roi, :) = table2array(data.F((trial-1) * recording_length  + 1:trial * recording_length,roi));
-                trial_trace(trial,roi,:) = movmean(trial_trace(trial, roi, :), 30);
+                trial_trace(trial, roi, :) = (data.F((trial-1) * recording_length  + 1:trial * recording_length,roi));
+                trial_trace(trial,roi,:) = movmean(trial_trace(trial, roi, :),30);
           
             end
             
@@ -83,7 +83,7 @@ for fly = 1: length(flies)
             
                 % normalize fluorescence trace to the mean of each trial
                 % and find the mean traces
-            norm_trace = odor_trace{o}./squeeze(nanmean(odor_trace{o},3));
+            norm_trace = odor_trace{o}; %./squeeze(nanmean(odor_trace{o},3));
 
             mean_response = squeeze(nanmean(trial_trace,1));
             
@@ -96,8 +96,8 @@ for fly = 1: length(flies)
             for roi = 1: size(mean_norm_trace,1);
                 figure; hold on
                 
-                rectangle('Position',[0 0.8 6 0.6], 'FaceColor',[0.97 0.97 0.97], 'Edgecolor', 'none')
-                h = plot(x_time, mean_norm_trace(roi,:)', "Color", cl_colors{roi}, "LineWidth", 2)
+                rectangle('Position',[0 0.8 6 0.6], 'FaceColor',[0.97 0.97 0.97], 'Edgecolor', 'none');
+                h = plot(x_time, mean_norm_trace(roi,:)', "Color", cl_colors{roi}, "LineWidth", 2);
                 plot(x_time, mean_norm_trace(roi,:)' + sem_norm_trace(roi,:)', "Color", cl_colors{roi})
                         alpha(0.3)
 
@@ -106,8 +106,8 @@ for fly = 1: length(flies)
 
 
                 legend(lobe_id{roi})    
-                lims = ylim 
-                xlim([-5,11])
+                lims = ylim ;
+                xlim([-5,11]);
                 xlabel("mean fluorescence F/F0")
                 ylabel("Time from odor onset (s)")
                 legend("UpWiN")
@@ -124,24 +124,31 @@ for fly = 1: length(flies)
             % mean traces
             norm_beh = beh_odor{o} ./ squeeze(nanmean(beh_odor{o},2));
             mean_beh = squeeze(nanmean(beh_odor{o},1));
+
+            
             
             %plot behavior
             for trial = 1:size(norm_trace,1)
 
+                x_f = ((1:length(norm_trace)) / fr);
+                x_beh = ((1:length(beh_odor{o}))/ beh_fr);
+    
+                beh_int = interp1(x_beh, norm_beh(trial,:), x_f);
+
                 for roi = 1: size(norm_trace,2)
                                     figure; hold on
 
-                    x_f = ((1:length(norm_trace)) / fr);
                     yyaxis left
                     plot(x_f, squeeze(norm_trace(trial,roi,:)), 'DisplayName', lobe_id{roi})
                     xlim([0,100])
     
-                    x_beh = ((1:length(beh_odor{o}))/ beh_fr);
                     yyaxis right
                     plot(x_beh,beh_odor{o}(trial,:), 'DisplayName', 'speed (mm/s)');
                     legend
-
+                    
+                    corr_coef(roi,trial,:, :) = corrcoef(beh_int, squeeze(norm_trace(trial,roi,:))', 'Rows', "complete");
                 end
+                
                 
             end
 
@@ -155,6 +162,7 @@ for fly = 1: length(flies)
             % line([odor_dur,  odor_dur], [lims(1) lims(2)], "color", 'k')
 
             title(odors{o})
+            corr_coef(:,:,1,2)
 
         end
         
