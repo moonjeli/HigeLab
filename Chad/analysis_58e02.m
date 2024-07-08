@@ -134,21 +134,24 @@ for fly = 1: length(flies)
                 x_beh = ((1:length(beh_odor{o}))/ beh_fr);
     
                 beh_int = interp1(x_beh, norm_beh(trial,:), x_f);
+                n_rois = size(norm_trace,2);
+
+                figure; hold on
 
                 for roi = 1: size(norm_trace,2)
-                                    figure; hold on
-
-                    yyaxis left
+                    subplot(n_rois + 1, 1, roi)
                     plot(x_f, squeeze(norm_trace(trial,roi,:)), 'DisplayName', lobe_id{roi})
                     xlim([0,100])
+                    legend(lobe_id{roi})
     
-                    yyaxis right
+                    subplot(n_rois + 1, 1, n_rois + 1)
                     plot(x_beh,beh_odor{o}(trial,:), 'DisplayName', 'speed (mm/s)');
                     legend
                     
                     corr_coef(roi,trial,:, :) = corrcoef(beh_int, squeeze(norm_trace(trial,roi,:))', 'Rows', "complete");
                 end
-                
+                corr_coef(:,:,1,2)
+
                 
             end
 
@@ -169,6 +172,5 @@ for fly = 1: length(flies)
     end
 
 end
-
 
 end
