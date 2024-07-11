@@ -76,11 +76,8 @@ for fly = 1: length(flies)
             
 
             for roi = 1: size(data.F,2)
-                if isfield(data, 'F_red')
-                        trial_trace(trial, roi, :) = (data.F_red_norm((trial-1) * recording_length  + 1:trial * recording_length,roi));
-                else
-                    trial_trace(trial, roi, :) = (data.F((trial-1) * recording_length  + 1:trial * recording_length,roi));
-                end
+        
+                trial_trace(trial, roi, :) = (data.Fc((trial-1) * recording_length  + 1:trial * recording_length,roi));
                 trial_trace(trial,roi,:) = movmean(trial_trace(trial, roi, :),30);
 
                 trial_trace_zscore(trial,roi,:) = (trial_trace(trial,roi,:) - nanmean(trial_trace(trial,roi,:)))/std(trial_trace(trial,roi,:));

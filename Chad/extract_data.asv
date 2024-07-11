@@ -249,7 +249,7 @@ else
     end
 end
 
-out.net_move = sqrt(out.drotvly.^2 + out.drotvlx.^2 + out.drotvlz.^2)
+movement = sqrt(out.drotvly^2 + out.drot)
 
 % change the wd back to the main folder
 cd(main_folder);
